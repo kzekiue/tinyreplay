@@ -42,16 +42,24 @@ the docs app runs at <http://localhost:3001>.
 
 ## Docker
 
-Build and run the app locally:
+Run the published image (no checkout, no build):
+
+```bash
+docker run -p 3000:3000 -v "$(pwd)/data:/app/data" ghcr.io/kzekiue/tinyreplay
+```
+
+Open <http://localhost:3000>. Session data persists in `./data/tinyreplay.db` on
+the host. The `latest` tag tracks `main`; tagged releases publish a versioned
+image (for example `ghcr.io/kzekiue/tinyreplay:0.1.0`).
+
+To build from source instead (for development or local changes):
 
 ```bash
 docker compose up --build
 ```
 
-The compose file mounts `./data` to `/app/data`. Session data is stored in
-`./data/tinyreplay.db` on the host.
-
-Equivalent Docker command:
+The compose file mounts `./data` to `/app/data`. The equivalent plain Docker
+commands:
 
 ```bash
 docker build -t tinyreplay .
