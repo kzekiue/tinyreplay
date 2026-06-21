@@ -133,6 +133,23 @@ Report vulnerabilities using the process in [SECURITY.md](./SECURITY.md).
 - Do not add outbound services to the SDK or server.
 - Update the lockfile with `npm install` when dependency metadata changes.
 
+## Branches, Commits, and PR Titles
+
+Branch names, PR titles, and commit subjects follow one convention so history
+and tooling stay clean. The `PR conventions` check enforces the branch name and
+PR title on every pull request.
+
+Allowed types: `feat`, `fix`, `docs`, `ci`, `chore`, `refactor`, `test`,
+`perf`, `build`, `style`, `revert`.
+
+- **Branch:** `<type>/<short-desc>`, lowercase and dash-separated. Examples:
+  `fix/ingest-timeout`, `feat/share-link`, `docs/env-vars`.
+- **PR title and commit subject:** Conventional Commits,
+  `<type>(optional-scope): summary`. Examples: `fix: reject oversized batches`,
+  `feat(sdk): flush on stop()`. Add `!` after the type for a breaking change.
+- Keep subjects imperative and under about 72 characters.
+- Do not add tool provenance or AI co-author trailers to commit messages.
+
 ## Pull Requests
 
 Pull requests should include:
