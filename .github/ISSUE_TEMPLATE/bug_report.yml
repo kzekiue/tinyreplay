@@ -1,0 +1,68 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Fill every required field so the bug is reproducible.
+        Search existing issues first, and redact secrets from anything you paste.
+  - type: input
+    id: version
+    attributes:
+      label: TinyReplay version or image tag
+      placeholder: "v0.1.0, or ghcr.io/kzekiue/tinyreplay:latest"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Docker image (ghcr.io)
+        - docker compose (built from source)
+        - Local dev (npm run dev)
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What went wrong, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (for SDK issues)
+      placeholder: "Chrome 126, Firefox 127 (leave blank if server-only)"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or config (redact secrets)
+      description: Server logs or console output. Redact DASHBOARD_PASSWORD, INGEST_TOKEN, and similar.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for a duplicate.
+          required: true
+        - label: I redacted any secrets from logs and config.
+          required: true

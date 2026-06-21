@@ -1,0 +1,42 @@
+name: PR conventions
+
+# Enforces the branch name and PR title on every pull request. Plain shell, no
+# external actions. See CONTRIBUTING.md for the convention this mirrors.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name and PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          set -uo pipefail
+          types='feat|fix|docs|ci|chore|refactor|test|perf|build|style|revert'
+          fail=0
+
+          if printf '%s' "$BRANCH" | grep -qE '^(dependabot/|revert-)'; then
+            echo "Branch '$BRANCH' is automation-generated; skipping name check."
+          elif printf '%s' "$BRANCH" | grep -qE "^($types)/[a-z0-9][a-z0-9._-]*$"; then
+            echo "Branch name OK: $BRANCH"
+          else
+            echo "::error::Branch '$BRANCH' must be <type>/<short-desc> (lowercase, dashes), e.g. fix/ingest-timeout. Allowed types: $types"
+            fail=1
+          fi
+
+          if printf '%s' "$PR_TITLE" | grep -qE "^($types)(\([a-z0-9._/-]+\))?!?: .+"; then
+            echo "PR title OK: $PR_TITLE"
+          else
+            echo "::error::PR title must follow Conventional Commits, e.g. 'fix: reject oversized batches'. Allowed types: $types"
+            fail=1
+          fi
+
+          exit $fail
