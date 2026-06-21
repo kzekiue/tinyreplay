@@ -1,0 +1,42 @@
+---
+title: Introduction
+description: What TinyReplay is, what it deliberately is not, and who it is for.
+---
+
+TinyReplay records what happened in a browser session and lets you play it back.
+That is the entire product. It exists for the moment a user reports "it broke" and
+you want to *watch the break* instead of guessing.
+
+## What it is
+
+- **Self-hosted.** Your server, your SQLite file, your data.
+- **Small.** One process and one SQLite database file.
+- **Built on rrweb.** DOM recording and replay through a focused SDK wrapper.
+- **Privacy-conscious by default.** Form inputs are masked at capture time.
+
+## What it is not
+
+TinyReplay is intentionally *not* a product analytics suite. It has no:
+
+- funnels or conversion analytics
+- heatmaps or scroll maps
+- feature flags or A/B testing
+- user profiles or identity stitching
+- a hosted cloud service or an account system
+
+<Callout type="warn" title="If you need those, TinyReplay is the wrong tool">
+  TinyReplay trades features for size and the ability to run the whole thing
+  yourself.
+</Callout>
+
+## Who it's for
+
+Privacy-conscious indie developers and small teams who own their own server,
+live in terminals, and are allergic to SaaS bloat. You open the dashboard to
+find one broken session, watch it, and leave.
+
+## Next
+
+Continue to [Installation](/docs/getting-started/installation) to get the server
+running, then [First replay](/docs/getting-started/first-replay) to record a
+session.

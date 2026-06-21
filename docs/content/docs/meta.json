@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "index",
+    "---Guides---",
+    "getting-started",
+    "sdk",
+    "server",
+    "privacy",
+    "architecture",
+    "---Help---",
+    "troubleshooting"
+  ]
+}

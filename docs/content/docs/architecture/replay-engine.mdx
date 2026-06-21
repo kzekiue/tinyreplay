@@ -1,0 +1,67 @@
+---
+title: Replay Engine
+description: How stored batches become a scrubable session, a timeline, and panels.
+---
+
+Replay is a pure transform followed by rrweb playback. The server reassembles a
+session's JSON batches; a single function turns that raw stream into everything
+the player shows; rrweb's `Replayer` drives the visual stage.
+
+## Reassembly
+
+A session's `events` rows are loaded in `seq` order and their `events_json`
+batches concatenated back into one rrweb event stream.
+
+## The parse step
+
+`parseReplay(raw)` is a pure transform with **no rrweb import** - it reads only a
+few well-known fields, so it runs in a Server Component, on the client, or in a
+test identically. It produces three things:
+
+```ts
+interface ParsedReplay {
+  meta: ReplayMeta        // start/end, totalTime, viewport, replayable
+  entries: ReplayEntry[]  // timeline markers + panel rows
+  events: unknown[]       // cleaned stream to feed the Replayer
+}
+```
+
+### Derived entries
+
+Each entry carries `t`, the millisecond offset from session start, which maps
+directly onto the timeline:
+
+| Kind        | Source                                                            |
+| ----------- | ---------------------------------------------------------------- |
+| `route`     | `tinyreplay/route` custom events                                 |
+| `click`     | rrweb mouse-interaction clicks                                   |
+| `rageclick` | ≥3 clicks on one target within 700 ms, collapsed into one marker |
+| `input`     | rrweb input events                                               |
+| `console`   | rrweb console plugin payloads                                    |
+| `network`   | `tinyreplay/network` custom events (metadata only)               |
+| `error`     | `tinyreplay/error` custom events                                 |
+
+<Callout type="info" title="Rage clicks">
+  Bursts of three or more clicks on the same node inside a 700 ms window collapse
+  into a single `rageclick` marker - a quiet signal of user frustration.
+</Callout>
+
+## Resilience
+
+The parser drops any event that isn't a usable object with numeric `type` and
+finite `timestamp`. A corrupt batch can't make the `Replayer` throw mid-replay -
+the bad entries are filtered out before playback.
+
+A session is marked `replayable` only when it has **at least two events including
+a full snapshot** - rrweb needs both to reconstruct anything.
+
+## Playback
+
+The cleaned `events` array is handed to rrweb's `Replayer`, which renders the
+session onto the replay stage. The timeline and side panels are driven by
+`entries`; scrubbing seeks the `Replayer` to the matching offset.
+
+<Callout type="ok" title="The stage is the hero">
+  On the replay screen the viewport is the focus; the timeline and panels
+  recede. Everything in the engine serves that one view.
+</Callout>

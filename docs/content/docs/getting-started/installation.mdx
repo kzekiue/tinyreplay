@@ -1,0 +1,58 @@
+---
+title: Installation
+description: Run the TinyReplay server from a checkout with Docker or Docker Compose.
+---
+
+The server is a single container. It writes one SQLite file to a mounted volume
+and serves the dashboard, the ingest API, and the SDK bundle on port 3000.
+
+## Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Visit `http://localhost:3000` - a working dashboard, ready to receive sessions.
+
+<Callout type="info" title="The volume matters">
+  `-v $(pwd)/data:/app/data` keeps your database on the host. Drop it and your
+  sessions vanish when the container is removed.
+</Callout>
+
+## Docker
+
+Build and run the image locally:
+
+```bash
+docker build -t tinyreplay .
+docker run --rm -p 3000:3000 -v "$(pwd)/data:/app/data" tinyreplay
+```
+
+## Verify it's up
+
+<Steps>
+<Step>
+**Dashboard** - `curl -i http://localhost:3000` returns `200`.
+</Step>
+<Step>
+**SDK bundle** - `curl -i http://localhost:3000/sdk/tinyreplay.umd.js` returns `200`.
+</Step>
+<Step>
+**Health probe** - `curl -i http://localhost:3000/api/health` returns `{"ok":true,...}`.
+</Step>
+</Steps>
+
+## What's served where
+
+| Endpoint      | URL                                            |
+| ------------- | ---------------------------------------------- |
+| Dashboard     | `http://localhost:3000`                        |
+| SDK bundle    | `http://localhost:3000/sdk/tinyreplay.umd.js`  |
+| Ingestion API | `POST http://localhost:3000/api/ingest`        |
+| Health probe  | `GET http://localhost:3000/api/health`         |
+
+## Next
+
+The server stores nothing until a page sends it events. Wire up the recorder in
+[First replay](/docs/getting-started/first-replay), or read the full
+[SDK quickstart](/docs/sdk/quickstart).

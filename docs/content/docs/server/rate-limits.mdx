@@ -1,0 +1,51 @@
+---
+title: Rate Limits
+description: Per-IP ingest rate limiting and the payload size ceiling.
+---
+
+The ingest endpoint is the only thing accepting writes from the outside, so it
+carries two guards: a per-IP rate limit and a payload size ceiling.
+
+## Per-IP rate limit
+
+```bash
+-e RATE_LIMIT_PER_MIN=100   # default
+```
+
+Each client IP may make up to `RATE_LIMIT_PER_MIN` ingest requests per minute.
+Beyond that the server returns `429`. The SDK retries once after 2 seconds, then
+drops the batch - recording continues regardless.
+
+The client IP is taken from `X-Forwarded-For` (first hop) or `X-Real-IP` when
+present, so it works behind a reverse proxy.
+
+## Payload size
+
+```bash
+-e MAX_PAYLOAD_BYTES=5000000   # default, 5 MB
+```
+
+The server checks `Content-Length` first, then verifies the actual byte length
+after reading. Anything larger gets a `413`. The SDK's 500-event batch cap keeps
+normal flushes comfortably under this.
+
+## Ingest responses
+
+| Condition                          | Status |
+| ---------------------------------- | ------ |
+| Not `application/json`             | `400`  |
+| Malformed JSON / invalid shape     | `400`  |
+| Missing / wrong ingest token       | `401`  |
+| Body exceeds `MAX_PAYLOAD_BYTES`   | `413`  |
+| Over the per-IP rate limit         | `429`  |
+| Store unavailable (disk/db error)  | `503`  |
+| Accepted and persisted             | `200`  |
+
+<Callout type="warn" title="Tune for your traffic">
+  High-traffic sites with many concurrent users behind one NAT may need a higher
+  `RATE_LIMIT_PER_MIN`. Watch for `429`s in your server logs.
+</Callout>
+
+## Next
+
+Trace a request end to end in [Event flow](/docs/architecture/event-flow).

@@ -1,0 +1,83 @@
+---
+title: Masking
+description: Hide sensitive content at capture time with data attributes and maskAllInputs.
+---
+
+Masking in TinyReplay is mapped directly onto rrweb's built-in privacy
+primitives. The SDK deliberately does **not** implement its own DOM scrubbing -
+rrweb strips content at capture time, before anything is serialized, which is the
+only safe place to do it.
+
+## Inputs are masked by default
+
+`maskAllInputs` is `true` out of the box. Every `<input>`, `<textarea>`, and
+`<select>` value is replaced before it ever leaves the page.
+
+```ts
+TinyReplay.init({
+  endpoint: location.origin,
+  projectId: 'app',
+  maskAllInputs: true, // default - keep it on unless you have a reason
+})
+```
+
+## Un-mask a safe input: `data-tr-unmask`
+
+Masking is on by default, so for the occasional non-sensitive field you actually
+want to read back - a search box, a quantity stepper - add `data-tr-unmask` to
+opt that input out. Its value is then captured in the clear; everything else
+stays masked.
+
+```html
+<input data-tr-unmask placeholder="Search" />
+```
+
+This is the only escape hatch from `maskAllInputs`. Use it sparingly, and never
+on a field that could hold personal data.
+
+## Mask specific text: `data-tr-mask`
+
+Add `data-tr-mask` to any element. Its text - and all of its descendants' text -
+is replaced with asterisks in the snapshot and in every mutation.
+
+```html
+<div data-tr-mask>
+  <span>Account balance: $4,210.55</span>
+  <p>Recorded as ***************</p>
+</div>
+```
+
+This maps to rrweb's *mask text* behavior via the selector
+`[data-tr-mask], [data-tr-mask] *`.
+
+## Block elements entirely: `data-tr-ignore`
+
+Add `data-tr-ignore` to skip recording an element and its subtree completely. A
+same-size placeholder is captured instead, so layout is preserved but content
+never exists in the recording.
+
+```html
+<section data-tr-ignore>
+  <!-- Not recorded at all. A blank box of the same size is captured. -->
+  <CreditCardForm />
+</section>
+```
+
+<Callout type="ok" title="Which one do I want?">
+  Use **`data-tr-mask`** when you want to see *that* something is there but not
+  read it (a balance, a name). Use **`data-tr-ignore`** for regions that must
+  never be captured in any form (a card form, a document viewer).
+</Callout>
+
+## Where masking happens
+
+<ArchitectureDiagram />
+
+Masking is applied by rrweb inside the **Browser SDK** node - the very first
+step. By the time events reach the Batch Transport, sensitive content is already
+gone. It is never buffered or transmitted in the clear.
+
+## Next
+
+See the [privacy guarantees](/docs/privacy/guarantees) for the precise list of
+what is and isn't captured.

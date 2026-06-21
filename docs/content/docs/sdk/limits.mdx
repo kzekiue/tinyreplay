@@ -1,0 +1,61 @@
+---
+title: Limits
+description: The recording and ingest limits, and what happens when you hit them.
+---
+
+TinyReplay keeps a small, predictable footprint. These limits exist so the
+recorder can never block the page, grow memory unbounded, or overwhelm the
+server.
+
+## The numbers
+
+<TinyReplayLimitsTable scope="all" />
+
+## What happens at each limit
+
+<Steps>
+<Step>
+### Batch size - 500 events
+
+A flush never exceeds 500 events. rrweb's initial full snapshot can be large, so
+overflow rolls into the next flush.
+</Step>
+
+<Step>
+### Buffer ceiling - 5000 events
+
+If the network stalls and the buffer fills, **new** events are dropped. The
+initial snapshot sits at the front of the buffer because a replay cannot live
+without it.
+</Step>
+
+<Step>
+### Recording duration - 30 minutes
+
+At `maxDurationMs` the recorder stops and flushes. The page keeps working,
+untouched - recording ends.
+</Step>
+
+<Step>
+### Payload size - 5 MB (server)
+
+Requests larger than `MAX_PAYLOAD_BYTES` get a `413`. The 500-event batch cap
+keeps normal flushes well under this.
+</Step>
+
+<Step>
+### Rate limit - 100 / min / IP (server)
+
+Beyond `RATE_LIMIT_PER_MIN` the server returns `429`. The SDK retries once, then
+drops the batch.
+</Step>
+</Steps>
+
+<Callout type="info" title="All the server-side numbers are configurable">
+  `MAX_PAYLOAD_BYTES` and `RATE_LIMIT_PER_MIN` are environment variables - see
+  [env vars](/docs/server/env-vars) and [rate limits](/docs/server/rate-limits).
+</Callout>
+
+## Next
+
+How batches actually get sent: [Transport](/docs/sdk/transport).

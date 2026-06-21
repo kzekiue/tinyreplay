@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: docker build -t tinyreplay .
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name tr -p 3000:3000 tinyreplay
+          for i in $(seq 1 20); do
+            if curl -fsS http://localhost:3000/api/health; then ok=1; break; fi
+            sleep 1
+          done
+          [ "$ok" = 1 ] || { echo "health check never passed"; docker logs tr; exit 1; }
+          curl -fsS -o /dev/null -w 'dashboard %{http_code}\n' http://localhost:3000/
+          docker rm -f tr

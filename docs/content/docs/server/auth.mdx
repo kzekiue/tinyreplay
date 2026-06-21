@@ -1,0 +1,60 @@
+---
+title: Auth
+description: Protect the dashboard with a password and ingestion with a token.
+---
+
+TinyReplay has two independent locks: one on the **dashboard** (who can watch
+sessions) and one on **ingestion** (who can submit them). Both are off by
+default.
+
+## Dashboard password
+
+Set `DASHBOARD_PASSWORD` to require HTTP Basic auth on the dashboard. Any
+username works; only the password is checked.
+
+```bash
+-e DASHBOARD_PASSWORD=replace-with-a-password
+```
+
+What stays **open** even with a password set:
+
+- `POST /api/ingest` - so recording keeps working from your sites.
+- `GET /api/health` - so orchestrators can probe it.
+- The SDK bundle at `/sdk/tinyreplay.umd.js`.
+
+## Ingestion token
+
+Set `INGEST_TOKEN` to require a token on every ingest request. The SDK sends it
+two ways; the server accepts either:
+
+```ts
+// In the SDK config - carried in the request body.
+TinyReplay.init({ endpoint, projectId, token: 'demo-token' })
+```
+
+```http
+# Or as a header, for server-to-server posting.
+Authorization: Bearer demo-token
+```
+
+The body token wins, because `sendBeacon` unload-flushes cannot set headers.
+Tokens are compared with a constant-time check and never persisted.
+
+<Callout type="warn" title="A browser token is not a secret">
+  Any value in client JavaScript is visible to the user. `INGEST_TOKEN` raises
+  the bar against random or automated POSTs - it is not confidential. For true
+  isolation, put the server behind your own network boundary.
+</Callout>
+
+## Responses
+
+| Condition                              | Status |
+| -------------------------------------- | ------ |
+| Missing / wrong ingest token           | `401`  |
+| Wrong dashboard password               | `401`  |
+| Valid request                          | `200`  |
+
+## Next
+
+[Rate limits](/docs/server/rate-limits) add a second layer against abuse;
+[retention](/docs/server/retention) controls how long data lives.

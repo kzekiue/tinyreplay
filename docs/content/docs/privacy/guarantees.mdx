@@ -1,0 +1,56 @@
+---
+title: Guarantees
+description: The definitive list of what TinyReplay records, masks, and never touches.
+---
+
+This is the authoritative inventory. If a guarantee here ever conflicts with
+behavior, treat it as a bug.
+
+## Captured
+
+- **The DOM and its mutations** - via rrweb, the basis of replay.
+- **Interactions** - clicks, input events, scroll, viewport.
+- **Console output** - `log` / `info` / `warn` / `error`, via rrweb's console plugin.
+- **Network metadata** - method, URL, status, duration. [Details](/docs/privacy/network-capture).
+- **Uncaught errors** - message and stack for errors and unhandled rejections.
+- **SPA route changes** - `pushState` / `replaceState` / `popstate`, to derive page count.
+- **Session metadata** - start time, start URL, viewport size, device type, user agent.
+
+## Masked or blocked
+
+- **All input values** - masked by default (`maskAllInputs`). Opt a single safe
+  input out with [`data-tr-unmask`](/docs/sdk/masking).
+- **`data-tr-mask`** - element text and subtree text replaced with asterisks.
+- **`data-tr-ignore`** - element and subtree not recorded; a placeholder is captured.
+
+## Never captured
+
+<Callout type="ok" title="Hard guarantees">
+  These are enforced in code, not by configuration.
+</Callout>
+
+- **Cookies.**
+- **`localStorage` and `sessionStorage`** - except TinyReplay's own session id.
+- **Request and response headers.**
+- **Request and response bodies.**
+
+## Never transmitted anywhere but your server
+
+- The SDK calls **only** `config.endpoint`. The transport is annotated
+  `NO TELEMETRY` and makes no third-party requests.
+- The ingest route is annotated `NO TELEMETRY` and makes **no outbound calls** of
+  any kind - it only writes to local SQLite.
+- The recorder **ignores its own ingest traffic**, so it never records itself.
+
+## Where masking happens
+
+At capture time, in the browser, before anything is buffered or sent. Masked and
+blocked content never exists in the recording - there is no downstream stage where it
+appears in the clear.
+
+## Your responsibilities
+
+- Don't put secrets in **URLs** or **query strings** - those are captured.
+- Avoid logging secrets to the **console** - console output is captured as text.
+- Block sensitive regions you don't control with
+  [`data-tr-ignore`](/docs/privacy/ignored-elements).

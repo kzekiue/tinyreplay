@@ -1,0 +1,64 @@
+{
+  "name": "@tinyreplay/sdk",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Browser session replay SDK for tinyreplay.",
+  "keywords": [
+    "session-replay",
+    "rrweb",
+    "self-hosted",
+    "privacy"
+  ],
+  "homepage": "https://github.com/kzekiue/tinyreplay#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kzekiue/tinyreplay.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/kzekiue/tinyreplay/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "rollup -c rollup.config.js -w",
+    "build": "rollup -c rollup.config.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rrweb/rrweb-plugin-console-record": "2.0.0-alpha.18",
+    "rrweb": "2.0.0-alpha.18"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-terser": "^1.0.0",
+    "@rollup/plugin-typescript": "^12.1.1",
+    "@types/node": "^22.10.1",
+    "jsdom": "^25.0.1",
+    "rollup": "^4.28.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.9"
+  }
+}

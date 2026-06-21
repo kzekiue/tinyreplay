@@ -1,0 +1,40 @@
+---
+title: Troubleshooting
+description: Fixes for the handful of things that go wrong with a self-hosted TinyReplay.
+---
+
+## No recordings appear
+
+The dashboard shows "Listening for sessions" but nothing lands.
+
+- Confirm the snippet is on the page and the network tab shows a `POST` to `/api/ingest` returning `200`.
+- The SDK flushes about every 5 seconds - interact with the page, then wait.
+- If `INGEST_TOKEN` is set, the snippet must send the same token. A `401` from `/api/ingest` means it doesn't match - see [Auth](/docs/server/auth).
+- A `429` means the per-IP rate limit tripped; see [Rate limits](/docs/server/rate-limits).
+
+## Ingest returns 503
+
+The store can't accept writes - usually the disk is full or the database is locked.
+
+- Check the health lamp in the dashboard header; red means failing. Hover it for the reason.
+- Free disk space, or set a [retention window](/docs/server/retention) and run **Settings → Storage → Reclaim space** to compact the database.
+- The SDK retries a failed batch once (after ~2 s); if the store is still down it drops that batch and keeps recording, so future flushes resume automatically once space is freed.
+
+## Storage keeps growing
+
+By default TinyReplay keeps every session forever.
+
+- Set a window in **Settings → Retention** (or the `RETENTION_DAYS` env var). Sessions older than the window are swept hourly.
+- **Settings → Storage → Reclaim space** applies retention immediately and compacts the file.
+
+## Masking isn't applied
+
+Masking happens in the SDK at capture time, before data reaches the server.
+
+- Mark sensitive elements per the [SDK masking guide](/docs/sdk/masking); the server cannot mask what was already recorded unmasked.
+- Re-record after fixing the markup - existing sessions keep whatever was captured.
+
+## The snippet won't load
+
+- The bundle is served from your own server, not a CDN. Confirm `/sdk/...` returns `200`.
+- A strict Content-Security-Policy on the recorded site can block the snippet or the connection to `/api/ingest`; allow your TinyReplay origin in `script-src` and `connect-src`.

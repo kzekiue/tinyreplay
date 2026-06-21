@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>tinyreplay - markets demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.coingecko.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #161719;
+        --panel: #1c1d20;
+        --surface: #232427;
+        --surface-hi: #292a2e;
+        --inset: #121315;
+        --line: #2c2d31;
+        --line-strong: #3a3b40;
+        --ink: #f2f1ef;
+        --ink-2: #cdccc8;
+        --muted: #97948d;
+        --faint: #6b6964;
+        --accent: #ef7c46;
+        --accent-ink: #f59264;
+        --up: #4ec98a;
+        --down: #f0644b;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        --raise: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4),
+          0 8px 24px -12px rgba(0, 0, 0, 0.6);
+        --well: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+        font-size: 14.5px;
+        line-height: 1.5;
+        letter-spacing: -0.01em;
+        color: var(--ink-2);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(900px 420px at 70% -8%, rgba(239, 124, 70, 0.09), transparent 70%);
+      }
+      a { color: inherit; text-decoration: none; }
+      ::selection { background: rgba(239, 124, 70, 0.28); }
+      .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+      .up { color: var(--up); }
+      .down { color: var(--down); }
+
+      /* ---- top faceplate ---- */
+      header {
+        position: sticky; top: 0; z-index: 20;
+        display: flex; align-items: center; gap: 16px;
+        padding: 0 20px; height: 54px;
+        background: color-mix(in oklab, var(--bg) 78%, transparent);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { font-weight: 700; letter-spacing: -0.03em; color: var(--ink); font-size: 16px; }
+      .brand b { color: var(--accent); font-weight: 700; }
+      .tag {
+        font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+        color: var(--faint); padding-left: 11px; border-left: 1px solid var(--line);
+      }
+      nav { display: flex; gap: 2px; margin-left: 8px; }
+      nav a {
+        padding: 6px 12px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 500;
+        color: var(--muted); transition: background 0.12s, color 0.12s;
+      }
+      nav a:hover { color: var(--ink); background: var(--surface); }
+      nav a.on { color: var(--ink); background: var(--surface); box-shadow: var(--raise); }
+      .status {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
+        font-family: var(--mono); font-size: 11px; color: var(--muted);
+        padding: 5px 11px; border-radius: 999px; background: var(--inset); box-shadow: var(--well);
+      }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+      .status.live .dot { background: var(--up); box-shadow: 0 0 7px var(--up); animation: pulse 1.8s ease-in-out infinite; }
+      .status.err .dot { background: var(--down); box-shadow: 0 0 7px var(--down); }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+      /* ---- layout ---- */
+      main { max-width: 1180px; margin: 0 auto; padding: 22px 20px 64px; }
+      .grid { display: grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start; }
+      @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+      .hide { display: none !important; }
+
+      .card {
+        background: linear-gradient(var(--surface-hi), var(--surface));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--raise);
+        padding: 16px;
+      }
+      .card + .card { margin-top: 16px; }
+      .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+      .card-head h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+      .eyebrow {
+        font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);
+      }
+      .pill {
+        font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+        color: var(--accent-ink); background: rgba(239, 124, 70, 0.12); border: 1px solid rgba(239, 124, 70, 0.25);
+        padding: 2px 7px; border-radius: 5px; white-space: nowrap;
+      }
+      .pill.warn { color: #e7b15a; background: rgba(231, 177, 90, 0.1); border-color: rgba(231, 177, 90, 0.25); }
+
+      /* ---- markets table ---- */
+      table { width: 100%; border-collapse: collapse; }
+      thead th {
+        text-align: right; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--faint); font-weight: 500; padding: 0 0 10px; border-bottom: 1px solid var(--line);
+      }
+      thead th:first-child { text-align: left; }
+      tbody tr { cursor: pointer; transition: background 0.1s; }
+      tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+      tbody tr.on { background: rgba(239, 124, 70, 0.08); }
+      tbody td { padding: 11px 0; border-bottom: 1px solid var(--line); text-align: right; }
+      tbody tr:last-child td { border-bottom: 0; }
+      .coin { display: flex; align-items: center; gap: 10px; text-align: left; }
+      .coin img { width: 26px; height: 26px; border-radius: 50%; background: var(--inset); }
+      .coin .nm { font-weight: 600; color: var(--ink); }
+      .coin .sy { font-family: var(--mono); font-size: 11px; color: var(--faint); text-transform: uppercase; }
+      .price { font-family: var(--mono); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+      .chg { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+      .spark { display: block; margin-left: auto; }
+
+      /* ---- detail / chart ---- */
+      .detail-top { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+      .detail-price { font-family: var(--mono); font-size: 30px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+      .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border-radius: var(--radius-sm); overflow: hidden; margin-top: 14px; }
+      .stat { background: var(--panel); padding: 10px 12px; }
+      .stat .k { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+      .stat .v { font-family: var(--mono); font-weight: 600; color: var(--ink-2); margin-top: 3px; font-variant-numeric: tabular-nums; }
+      @media (max-width: 560px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+      /* ---- trade ticket ---- */
+      .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--inset); border-radius: var(--radius-sm); box-shadow: var(--well); }
+      .seg button {
+        appearance: none; border: 0; padding: 8px; border-radius: 6px; font: inherit; font-weight: 600; font-size: 13px;
+        color: var(--muted); background: transparent; cursor: pointer; transition: all 0.12s;
+      }
+      .seg button.on[data-side='buy'] { color: #0c1a12; background: var(--up); }
+      .seg button.on[data-side='sell'] { color: #1c0c0a; background: var(--down); }
+      label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
+      label .pill { margin-left: 6px; }
+      input, textarea, select {
+        width: 100%; font: inherit; color: var(--ink); background: var(--inset);
+        border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 9px 11px; box-shadow: var(--well);
+      }
+      input::placeholder, textarea::placeholder { color: var(--faint); }
+      input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+      textarea { resize: vertical; min-height: 56px; }
+      .row { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
+      .btn {
+        appearance: none; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+        padding: 10px 16px; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer;
+        background: linear-gradient(var(--surface-hi), var(--surface)); box-shadow: var(--raise); transition: filter 0.12s;
+      }
+      .btn:hover { filter: brightness(1.12); }
+      .btn:active { transform: translateY(1px); }
+      .btn.primary { background: var(--accent); border-color: color-mix(in oklab, var(--accent) 70%, #000); color: #1a0d06; width: 100%; }
+      .result { font-family: var(--mono); font-size: 12px; color: var(--up); }
+
+      .kv { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); }
+      .kv:last-child { border-bottom: 0; }
+      .kv .k { color: var(--muted); font-size: 13px; }
+      .kv .v { font-family: var(--mono); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+      .note { font-size: 12px; color: var(--faint); margin-top: 12px; line-height: 1.5; }
+      .note code { font-family: var(--mono); color: var(--accent-ink); font-size: 11px; }
+
+      .danger {
+        margin-top: 14px; padding: 12px; border-radius: var(--radius-sm);
+        background: rgba(231, 177, 90, 0.06); border: 1px dashed rgba(231, 177, 90, 0.35);
+        /* This card is data-tr-ignore'd while its view is display:none at capture,
+           so rrweb records a 0x0 placeholder. Floor the size (min-* beats the inline
+           width/height rrweb writes) so the blanked region stays same-size in replay. */
+        min-width: 100%; min-height: 96px;
+      }
+      .danger h3 { margin: 0 0 4px; font-size: 13px; color: #e7b15a; display: flex; align-items: center; gap: 8px; }
+      .skel { background: linear-gradient(90deg, var(--inset), var(--surface-hi), var(--inset)); background-size: 200% 100%; animation: shim 1.3s linear infinite; border-radius: 5px; color: transparent; }
+      @keyframes shim { to { background-position: -200% 0; } }
+      .banner { margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(240, 100, 75, 0.1); border: 1px solid rgba(240, 100, 75, 0.3); color: #f4988a; font-size: 13px; }
+      footer { max-width: 1180px; margin: 0 auto; padding: 18px 20px; color: var(--faint); font-family: var(--mono); font-size: 11px; border-top: 1px solid var(--line); }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="brand">tinyreplay<b>.</b></span>
+      <span class="tag">markets demo</span>
+      <nav>
+        <a href="/markets" data-route class="on">Markets</a>
+        <a href="/settings" data-route>Settings</a>
+      </nav>
+      <span class="status" id="status"><span class="dot"></span><span id="statustext">connecting…</span></span>
+    </header>
+
+    <main>
+      <div id="banner"></div>
+
+      <!-- ============ MARKETS ============ -->
+      <section data-view="markets">
+        <div class="grid">
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <span class="eyebrow">Live · CoinGecko</span>
+                <h2 style="margin-left: 2px">Top markets</h2>
+                <input id="filter" data-tr-unmask placeholder="Filter assets" autocomplete="off"
+                  style="max-width: 168px; margin-left: auto; padding: 6px 10px; font-size: 13px" />
+                <span class="pill" style="color: var(--up); background: rgba(78, 201, 138, 0.12); border-color: rgba(78, 201, 138, 0.3)">data-tr-unmask</span>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>Asset</th><th>Price</th><th>24h</th><th style="width: 96px">7d</th></tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+
+            <div class="card" id="detail">
+              <div class="eyebrow" id="d-eyebrow">Select an asset</div>
+              <div class="detail-top" style="margin-top: 8px">
+                <div>
+                  <div class="detail-price" id="d-price">-</div>
+                  <div class="chg" id="d-chg" style="font-size: 14px"></div>
+                </div>
+                <svg id="d-chart" class="spark" width="100%" height="120" style="flex: 1; min-width: 220px"></svg>
+              </div>
+              <div class="stats" id="d-stats"></div>
+            </div>
+          </div>
+
+          <!-- trade ticket: masking lives here -->
+          <aside>
+            <div class="card">
+              <div class="card-head"><span class="eyebrow">Order ticket</span></div>
+              <div class="seg">
+                <button data-side="buy" class="on">Buy</button>
+                <button data-side="sell">Sell</button>
+              </div>
+              <label>Amount (USD) <span class="pill">masked input</span></label>
+              <input id="amount" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+              <label>Order note <span class="pill">masked input</span></label>
+              <textarea id="note" rows="2" placeholder="Optional note to self">Ladder in below 60k.</textarea>
+              <div class="row">
+                <button class="btn primary" id="place">Place order</button>
+              </div>
+              <div class="result" id="orderresult" style="margin-top: 10px"></div>
+              <div class="note">
+                Amount and note are masked at capture (<code>maskAllInputs</code>). The order POST is
+                visible in the replay's network panel as <code>metadata only</code> - no body.
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><span class="eyebrow">Portfolio</span></div>
+              <div class="kv"><span class="k">Balance <span class="pill">data-tr-mask</span></span><span class="v" data-tr-mask>$48,210.55</span></div>
+              <div class="kv"><span class="k">Today</span><span class="v up">+$612.40</span></div>
+              <div class="kv"><span class="k">Open orders</span><span class="v" id="openorders">0</span></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section data-view="settings" class="hide">
+        <div class="grid">
+          <div class="card">
+            <div class="card-head"><span class="eyebrow">Account</span><h2 style="margin-left: 2px">Settings</h2></div>
+            <p style="margin-top: 4px">
+              Signed in as
+              <strong data-tr-mask style="color: var(--ink)">ada.lovelace@example.com</strong>
+              <span class="pill">data-tr-mask</span>
+            </p>
+            <label>Exchange API key <span class="pill">masked input</span></label>
+            <input id="apikey" type="password" placeholder="sk_live_…" autocomplete="off" />
+            <label>Webhook notes <span class="pill">masked input</span></label>
+            <textarea rows="2" placeholder="Notes">Rotate this key every 90 days.</textarea>
+
+            <div class="danger" data-tr-ignore>
+              <h3>Linked bank <span class="pill warn">data-tr-ignore</span></h3>
+              <p style="margin: 0; font-size: 13px; color: var(--muted)">
+                This whole card carries <code style="font-family: var(--mono); color: var(--accent-ink)">data-tr-ignore</code>,
+                so it and everything in it is replaced by a blank placeholder in the replay.
+              </p>
+              <div style="margin-top: 8px" class="kv">
+                <span class="k">Account</span><span class="v">ACH ••6677 · routing 021000021</span>
+              </div>
+            </div>
+          </div>
+          <aside class="card">
+            <div class="card-head"><span class="eyebrow">What to watch in replay</span></div>
+            <div class="note" style="margin-top: 0">
+              Open this session in the dashboard, then check:
+              <div class="kv" style="margin-top: 8px"><span class="k">Inputs</span><span class="v" style="font-size: 12px">••••</span></div>
+              <div class="kv"><span class="k">data-tr-mask</span><span class="v" style="font-size: 12px">•••••</span></div>
+              <div class="kv"><span class="k">data-tr-ignore</span><span class="v" style="font-size: 12px">absent</span></div>
+              <div class="kv"><span class="k">Network</span><span class="v" style="font-size: 12px">GET · POST</span></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer>tinyreplay example · markets data from api.coingecko.com · recording to :3000</footer>
+
+    <!-- 1) Load the SDK bundle from the running TinyReplay server. -->
+    <script src="http://localhost:3000/sdk/tinyreplay.umd.js"></script>
+    <script>
+      (function () {
+        var statusEl = document.getElementById('status');
+        var statusText = document.getElementById('statustext');
+        function setStatus(cls, text) { statusEl.className = 'status ' + cls; statusText.textContent = text; }
+
+        // 2) Start recording (defaults mask every input). Real keys: endpoint, projectId.
+        if (window.TinyReplay) {
+          TinyReplay.init({ endpoint: 'http://localhost:3000', projectId: 'markets-demo', debug: true });
+          setStatus('live', 'recording');
+        } else {
+          setStatus('err', 'SDK failed to load (server on :3000?)');
+        }
+
+        // ---- tiny pushState router so route changes are recorded ----
+        function route(path) {
+          var p = path.replace(/^.*\/(markets|settings).*/, '$1');
+          if (p !== 'markets' && p !== 'settings') p = 'markets';
+          document.querySelectorAll('[data-view]').forEach(function (s) { s.classList.toggle('hide', s.dataset.view !== p); });
+          document.querySelectorAll('nav a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '/' + p); });
+        }
+        document.querySelectorAll('[data-route]').forEach(function (a) {
+          a.addEventListener('click', function (e) { e.preventDefault(); history.pushState({}, '', a.getAttribute('href')); route(a.getAttribute('href')); });
+        });
+        window.addEventListener('popstate', function () { route(location.pathname); });
+        route(location.pathname);
+
+        // ---- formatting helpers ----
+        var fmtUSD = function (n) {
+          if (n == null || isNaN(n)) return '-';
+          var d = n >= 1000 ? 0 : n >= 1 ? 2 : 6;
+          return '$' + n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+        };
+        var fmtPct = function (n) { return (n >= 0 ? '+' : '') + (n || 0).toFixed(2) + '%'; };
+        var fmtBig = function (n) {
+          if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+          if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+          if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+          return fmtUSD(n);
+        };
+
+        // ---- SVG line builder (sparkline + detail chart, no libraries) ----
+        function pathFor(values, w, h, pad) {
+          if (!values || values.length < 2) return '';
+          var lo = Math.min.apply(null, values), hi = Math.max.apply(null, values);
+          var span = hi - lo || 1;
+          var step = (w - pad * 2) / (values.length - 1);
+          return values.map(function (v, i) {
+            var x = pad + i * step;
+            var y = pad + (h - pad * 2) * (1 - (v - lo) / span);
+            return (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+          }).join(' ');
+        }
+        function sparkSVG(values, up) {
+          var w = 88, h = 30, c = up ? 'var(--up)' : 'var(--down)';
+          return '<svg class="spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+            '<path d="' + pathFor(values, w, h, 2) + '" fill="none" stroke="' + c + '" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+        }
+
+        // ---- markets table (real network calls -> captured by the SDK) ----
+        var MARKETS = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=8&page=1&sparkline=true&price_change_percentage=24h';
+        var rowsEl = document.getElementById('rows');
+        var bannerEl = document.getElementById('banner');
+        var coins = [], selected = null, filterQ = '';
+
+        function skeletonRows() {
+          var html = '';
+          for (var i = 0; i < 6; i++) html += '<tr><td colspan="4"><span class="skel">loading market data…</span></td></tr>';
+          rowsEl.innerHTML = html;
+        }
+        function renderRows() {
+          var q = filterQ.toLowerCase();
+          var list = q ? coins.filter(function (c) {
+            return c.name.toLowerCase().indexOf(q) >= 0 || c.symbol.toLowerCase().indexOf(q) >= 0;
+          }) : coins;
+          rowsEl.innerHTML = list.map(function (c) {
+            var up = (c.price_change_percentage_24h || 0) >= 0;
+            return '<tr data-id="' + c.id + '" class="' + (c.id === selected ? 'on' : '') + '">' +
+              '<td><div class="coin"><img src="' + c.image + '" alt="" loading="lazy"/>' +
+                '<div><div class="nm">' + c.name + '</div><div class="sy">' + c.symbol + '</div></div></div></td>' +
+              '<td><span class="price">' + fmtUSD(c.current_price) + '</span></td>' +
+              '<td><span class="chg ' + (up ? 'up' : 'down') + '">' + fmtPct(c.price_change_percentage_24h) + '</span></td>' +
+              '<td>' + sparkSVG((c.sparkline_in_7d || {}).price, up) + '</td></tr>';
+          }).join('');
+          rowsEl.querySelectorAll('tr').forEach(function (tr) {
+            tr.addEventListener('click', function () { selectCoin(tr.dataset.id); });
+          });
+        }
+
+        async function loadMarkets() {
+          try {
+            var res = await fetch(MARKETS);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            coins = await res.json();
+            bannerEl.innerHTML = '';
+            renderRows();
+            if (!selected && coins.length) selectCoin(coins[0].id);
+          } catch (err) {
+            // CoinGecko free tier rate-limits; degrade without crashing the demo.
+            if (!coins.length) skeletonRows();
+            bannerEl.innerHTML = '<div class="banner">Could not refresh markets (' + err.message + '). CoinGecko may be rate-limiting - the replay still recorded the failed request.</div>';
+          }
+        }
+
+        // ---- detail + 7-day chart (another captured request per asset) ----
+        var dEyebrow = document.getElementById('d-eyebrow'), dPrice = document.getElementById('d-price'),
+            dChg = document.getElementById('d-chg'), dStats = document.getElementById('d-stats'), dChart = document.getElementById('d-chart');
+
+        function selectCoin(id) {
+          selected = id;
+          rowsEl.querySelectorAll('tr').forEach(function (tr) { tr.classList.toggle('on', tr.dataset.id === id); });
+          var c = coins.find(function (x) { return x.id === id; });
+          if (!c) return;
+          var up = (c.price_change_percentage_24h || 0) >= 0;
+          dEyebrow.textContent = c.name + ' · ' + c.symbol.toUpperCase() + ' / USD';
+          dPrice.textContent = fmtUSD(c.current_price);
+          dChg.className = 'chg ' + (up ? 'up' : 'down');
+          dChg.textContent = fmtPct(c.price_change_percentage_24h) + ' · 24h';
+          dStats.innerHTML = [
+            ['Market cap', fmtBig(c.market_cap)],
+            ['24h volume', fmtBig(c.total_volume)],
+            ['24h high', fmtUSD(c.high_24h)],
+            ['24h low', fmtUSD(c.low_24h)],
+          ].map(function (s) { return '<div class="stat"><div class="k">' + s[0] + '</div><div class="v">' + s[1] + '</div></div>'; }).join('');
+          drawChart(id, up);
+        }
+
+        async function drawChart(id, up) {
+          dChart.innerHTML = '<rect width="100%" height="100%" class="skel" rx="6"/>';
+          try {
+            var res = await fetch('https://api.coingecko.com/api/v3/coins/' + id + '/market_chart?vs_currency=usd&days=7');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            var data = await res.json();
+            if (id !== selected) return; // a newer selection won the race
+            var vals = (data.prices || []).map(function (p) { return p[1]; });
+            var w = dChart.clientWidth || 320, h = 120, c = up ? 'var(--up)' : 'var(--down)';
+            var line = pathFor(vals, w, h, 6);
+            dChart.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+            dChart.innerHTML =
+              '<defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1">' +
+                '<stop offset="0" stop-color="' + c + '" stop-opacity="0.22"/><stop offset="1" stop-color="' + c + '" stop-opacity="0"/></linearGradient></defs>' +
+              '<path d="' + line + ' L' + (w - 6) + ' ' + (h - 6) + ' L6 ' + (h - 6) + ' Z" fill="url(#fill)"/>' +
+              '<path d="' + line + '" fill="none" stroke="' + c + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+          } catch (err) {
+            if (id === selected) dChart.innerHTML = '<text x="12" y="60" fill="var(--faint)" font-size="12">chart unavailable</text>';
+          }
+        }
+
+        // ---- order ticket ----
+        var side = 'buy';
+        document.querySelectorAll('.seg button').forEach(function (b) {
+          b.addEventListener('click', function () {
+            side = b.dataset.side;
+            document.querySelectorAll('.seg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+          });
+        });
+        var openOrders = 0;
+        document.getElementById('place').addEventListener('click', async function () {
+          var amount = document.getElementById('amount').value || '0';
+          var c = coins.find(function (x) { return x.id === selected; });
+          var resEl = document.getElementById('orderresult');
+          resEl.textContent = 'routing order…';
+          var order = { side: side, asset: c ? c.symbol : 'btc', usd: amount, ts: Date.now() };
+          // Best-effort POST to a public echo so a POST shows up in the network panel.
+          try { await fetch('https://httpbin.org/post', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(order) }); } catch (e) {}
+          openOrders += 1;
+          document.getElementById('openorders').textContent = String(openOrders);
+          resEl.textContent = '✓ ' + side + ' ' + (c ? c.symbol.toUpperCase() : '') + ' order placed (demo)';
+        });
+
+        // data-tr-unmask: this filter is non-sensitive, so it stays visible in
+        // the replay (every other input is masked).
+        document.getElementById('filter').addEventListener('input', function (e) {
+          filterQ = e.target.value; renderRows();
+        });
+
+        // ---- poll markets ----
+        loadMarkets();
+        setInterval(loadMarkets, 30000);
+      })();
+    </script>
+  </body>
+</html>

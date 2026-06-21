@@ -1,0 +1,54 @@
+---
+title: Retention
+description: Automatically delete old sessions on a schedule, or keep everything.
+---
+
+By default TinyReplay keeps every session forever. Set `RETENTION_DAYS` to expire
+old sessions automatically, or set the window in the dashboard under
+**Settings → Retention**, which persists and overrides `RETENTION_DAYS`.
+
+## Enable it
+
+```bash
+-e RETENTION_DAYS=30
+```
+
+With this set, the server deletes sessions whose recording **started** more than
+30 days ago. Their events go with them via `ON DELETE CASCADE`.
+
+## How the sweep works
+
+<Steps>
+<Step>
+On startup, if `RETENTION_DAYS > 0`, a sweep runs immediately.
+</Step>
+<Step>
+The sweep then repeats **every hour**.
+</Step>
+<Step>
+Each sweep deletes `sessions` where `started_at` is older than the cutoff; the
+removed count is logged.
+</Step>
+</Steps>
+
+```text
+[TinyReplay] retention: removed 12 session(s) older than 30d
+```
+
+<Callout type="info" title="Unset means forever">
+  `RETENTION_DAYS` unset, `0`, or any invalid / negative value is treated as
+  "keep everything". There is no implicit expiry.
+</Callout>
+
+## Notes
+
+- The sweeper never keeps the process alive on its own (its timer is `unref`'d).
+- Deletion is by **start time**, not last activity - a long session is measured
+  from when it began.
+- A failed sweep is logged and retried on the next hourly tick; it never crashes
+  the server.
+
+## Next
+
+For a manual purge or to understand the cascade, see the
+[SQLite schema](/docs/architecture/sqlite-schema).

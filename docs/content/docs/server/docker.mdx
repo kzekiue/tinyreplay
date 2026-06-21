@@ -1,0 +1,75 @@
+---
+title: Docker
+description: Running, persisting, and operating the TinyReplay server container.
+---
+
+The server Dockerfile builds a single runtime image. It runs the app process as a
+non-root user, exposes port 3000, and includes a `HEALTHCHECK`.
+
+## Run
+
+```bash
+docker build -t tinyreplay .
+docker run --rm -p 3000:3000 -v "$(pwd)/data:/app/data" tinyreplay
+```
+
+## Persisting data
+
+Everything lives in one SQLite file under `/app/data`. Mount that directory to
+keep your sessions across container restarts and upgrades:
+
+```bash
+-v $(pwd)/data:/app/data
+```
+
+The database (and its WAL sidecar files) are created automatically on first run.
+
+## Configuration
+
+Pass configuration as environment variables:
+
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  -e DASHBOARD_PASSWORD=replace-with-a-password \
+  -e RETENTION_DAYS=30 \
+  -e ALLOWED_ORIGINS=https://app.example.com \
+  tinyreplay
+```
+
+Every variable is documented in [Env vars](/docs/server/env-vars).
+
+## Compose
+
+```yaml title="docker-compose.yml"
+services:
+  tinyreplay:
+    build: .
+    image: tinyreplay
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./data:/app/data
+    environment:
+      RETENTION_DAYS: '30'
+    restart: unless-stopped
+```
+
+## Health
+
+The container's `HEALTHCHECK` probes `/api/health`, which returns
+`{"ok":true,...}`. Use it for orchestrator readiness checks:
+
+```bash
+curl -i http://localhost:3000/api/health
+```
+
+<Callout type="info" title="Runs as non-root">
+  The image drops privileges to a non-root user. Make sure the mounted `data`
+  directory is writable by it (it is, by default, when Docker creates the volume).
+</Callout>
+
+## Next
+
+Lock it down with [Auth](/docs/server/auth), then set a
+[retention](/docs/server/retention) policy.

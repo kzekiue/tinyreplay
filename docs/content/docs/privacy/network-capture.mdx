@@ -1,0 +1,54 @@
+---
+title: Network Capture
+description: Network requests are recorded as metadata only - never headers or bodies.
+---
+
+TinyReplay captures network activity to help you debug, but it captures
+**metadata only**. This is a hard boundary in the code, not a configurable
+option.
+
+## What is captured
+
+For each `fetch` and `XMLHttpRequest`:
+
+- **Method** - `GET`, `POST`, …
+- **URL** - the request URL
+- **Status** - the HTTP status code (`0` on network failure)
+- **Duration** - round-trip time in milliseconds
+
+```ts
+// The exact shape emitted per request:
+interface NetworkEntryPayload {
+  method: string
+  url: string
+  status: number
+  durationMs: number
+}
+```
+
+## What is never captured
+
+<Callout type="danger" title="No headers. No bodies. Ever.">
+  Request and response **headers** and **bodies** are never read or stored. The
+  capture code is annotated to forbid adding body capture.
+</Callout>
+
+There is no code path that reads a request or response body. The instrumentation
+patches `fetch` and `XHR` purely to time them and read their method, URL, and
+status.
+
+## The SDK ignores itself
+
+The recorder's own flush traffic to `/api/ingest` is excluded from network
+capture - otherwise recording would observe itself and create a feedback loop.
+
+## A note on URLs
+
+URLs *are* captured in full, including query strings. If you put secrets or PII
+in query parameters, those will appear in the recording. Prefer headers or bodies
+for sensitive values (which are never captured) - or block the originating
+component with [`data-tr-ignore`](/docs/privacy/ignored-elements).
+
+## Next
+
+The complete inventory of what's recorded: [Guarantees](/docs/privacy/guarantees).

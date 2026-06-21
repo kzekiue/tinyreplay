@@ -1,0 +1,48 @@
+---
+title: Ignored Elements
+description: Block elements and their subtrees from being recorded at all.
+---
+
+When masking text is not enough - when a region must never be captured in any
+form - block it with `data-tr-ignore`.
+
+## `data-tr-ignore`
+
+```html
+<section data-tr-ignore>
+  <CreditCardForm />
+</section>
+```
+
+The element and its entire subtree are **not recorded**. rrweb captures a
+same-size placeholder in its place, so the surrounding layout is preserved while
+the content does not exist in the recording.
+
+This maps to rrweb's *block* primitive via the `[data-tr-ignore]` selector.
+
+## Masked vs. ignored
+
+| Behavior            | `data-tr-mask`                    | `data-tr-ignore`                       |
+| ------------------- | --------------------------------- | -------------------------------------- |
+| Element shape       | Preserved                         | Preserved (blank placeholder)          |
+| Text content        | Replaced with asterisks           | Not recorded at all                    |
+| Child elements      | Recorded, their text masked       | Not recorded                           |
+| Use it for          | Balances, names, partial PII      | Card forms, document viewers, secrets  |
+
+<Callout type="danger" title="Reach for ignore when in doubt">
+  If a region contains data that must never appear in a recording even as a
+  masked outline - payment fields, identity documents, private messages - block
+  it with `data-tr-ignore` rather than masking it.
+</Callout>
+
+## Good candidates to ignore
+
+- Payment and card-entry forms
+- Document / file viewers and previews
+- Private message threads
+- Anything rendering third-party PII you don't control
+
+## Next
+
+See exactly what the SDK records and skips in the
+[privacy guarantees](/docs/privacy/guarantees).

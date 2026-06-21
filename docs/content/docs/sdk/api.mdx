@@ -1,0 +1,69 @@
+---
+title: SDK API
+description: The full TinyReplay.init() configuration and the two public methods.
+---
+
+The SDK exposes exactly two methods and one config object. That is the whole
+surface.
+
+## `TinyReplay.init(config)`
+
+Starts recording the current page. Idempotent - a second call while recording is
+active does nothing. Never runs during SSR (`window` guard).
+
+### Config
+
+| Option          | Type      | Default     | Description                                                                 |
+| --------------- | --------- | ----------- | --------------------------------------------------------------------------- |
+| `endpoint`      | `string`  | _required_  | Base URL of your TinyReplay server, no trailing slash.                      |
+| `projectId`     | `string`  | _required_  | Arbitrary project identifier (1–64 chars).                                  |
+| `token`         | `string`  | -           | Ingest token. Required only if the server sets `INGEST_TOKEN`.              |
+| `flushInterval` | `number`  | `5000`      | Milliseconds between batch flushes.                                         |
+| `maxDurationMs` | `number`  | `1800000`   | Max recording duration (30 min). Recording stops and flushes when reached.  |
+| `maskAllInputs` | `boolean` | `true`      | Mask every `input` / `textarea` / `select` value at capture time.           |
+| `debug`         | `boolean` | `false`     | Log capture and flush activity to the console.                              |
+
+```ts
+TinyReplay.init({
+  endpoint: 'https://replay.example.com',
+  projectId: 'checkout',
+  token: 'demo-token',
+  flushInterval: 5000,
+  maxDurationMs: 30 * 60_000,
+  maskAllInputs: true,
+  debug: false,
+})
+```
+
+<Callout type="warn" title="The token is not a secret in the browser">
+  Anything in client JavaScript is readable by the user. `INGEST_TOKEN` raises
+  the bar against random POSTs; it does not make the token confidential. See
+  [Auth](/docs/server/auth).
+</Callout>
+
+## `TinyReplay.stop()`
+
+```ts
+await TinyReplay.stop(): Promise<void>
+```
+
+Stops recording and drains the buffer to the server. Resolves once the final
+batches are sent. A no-op if nothing is recording.
+
+## What's recorded
+
+Beyond the DOM and interactions captured by rrweb, the SDK adds:
+
+- **Console output** (`log` / `info` / `warn` / `error`) via rrweb's console plugin.
+- **Network metadata** - method, URL, status, duration. Never headers or bodies.
+- **Uncaught errors** and unhandled promise rejections (message + stack).
+- **SPA route changes** - `pushState` / `replaceState` / `popstate`, used to
+  derive the page count.
+
+It never captures cookies, `localStorage`, or `sessionStorage` (other than its
+own session id), and it ignores its own ingest requests so it never records
+itself.
+
+## Next
+
+[Masking](/docs/sdk/masking) · [Limits](/docs/sdk/limits) · [Transport](/docs/sdk/transport)

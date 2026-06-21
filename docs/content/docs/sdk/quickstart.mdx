@@ -1,0 +1,76 @@
+---
+title: SDK Quickstart
+description: Add the TinyReplay recorder to any website - script tag or npm.
+---
+
+The SDK is a thin wrapper around rrweb that records the page and flushes batches
+to your server. It never calls any third party - only `config.endpoint`.
+
+## Install
+
+<CodeGroup>
+<CodeGroupPanel label="Script tag">
+
+```html
+<script src="https://your-server.example.com/sdk/tinyreplay.umd.js"></script>
+<script>
+  TinyReplay.init({
+    endpoint: 'https://your-server.example.com',
+    projectId: 'my-project',
+  })
+</script>
+```
+
+</CodeGroupPanel>
+<CodeGroupPanel label="npm">
+
+```bash
+npm install @tinyreplay/sdk
+```
+
+```ts
+import TinyReplay from '@tinyreplay/sdk'
+
+TinyReplay.init({
+  endpoint: 'https://your-server.example.com',
+  projectId: 'my-project',
+})
+```
+
+</CodeGroupPanel>
+</CodeGroup>
+
+The UMD bundle is served by your own TinyReplay server at
+`/sdk/tinyreplay.umd.js`, so same-origin sites can use a relative `endpoint` of
+`location.origin`.
+
+## Minimum config
+
+Only two fields are required:
+
+```ts
+TinyReplay.init({
+  endpoint: 'https://your-server.example.com', // your server, no trailing slash
+  projectId: 'my-project',                     // any identifier string
+})
+```
+
+<Callout type="info" title="Safe to call once">
+  `init()` is a no-op if a recording is already active, and it never runs during
+  server-side rendering. Call it once, as early as you can on the client.
+</Callout>
+
+## Stopping
+
+```ts
+await TinyReplay.stop() // stops recording and flushes buffered events
+```
+
+You rarely need this - recording stops automatically on page unload and after
+`maxDurationMs` (30 minutes by default).
+
+## Next
+
+- Every option: [SDK API](/docs/sdk/api).
+- Hide sensitive content: [Masking](/docs/sdk/masking).
+- What the limits are: [Limits](/docs/sdk/limits).

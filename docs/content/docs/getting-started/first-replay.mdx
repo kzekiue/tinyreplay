@@ -1,0 +1,76 @@
+---
+title: First Replay
+description: Record your first session and watch it play back, end to end.
+---
+
+This walks the full loop: start the server, drop in the snippet, generate a
+session, and replay it.
+
+<Steps>
+<Step>
+### Start the server
+
+```bash
+docker compose up --build
+```
+
+Leave it listening on `:3000`.
+</Step>
+
+<Step>
+### Add the snippet to a page
+
+Paste this into any HTML page served from the same origin as the server (the
+dashboard hosts the SDK bundle for you):
+
+```html
+<script src="/sdk/tinyreplay.umd.js"></script>
+<script>
+  TinyReplay.init({
+    endpoint: location.origin,
+    projectId: 'my-project',
+  })
+</script>
+```
+
+If your site is on a **different origin**, point `endpoint` at the server and set
+[`ALLOWED_ORIGINS`](/docs/server/env-vars) on the server:
+
+```html
+<script src="http://localhost:3000/sdk/tinyreplay.umd.js"></script>
+<script>
+  TinyReplay.init({
+    endpoint: 'http://localhost:3000',
+    projectId: 'my-project',
+  })
+</script>
+```
+</Step>
+
+<Step>
+### Generate a session
+
+Open the page and interact - click around, scroll, type. The recorder buffers
+events and flushes a batch every five seconds (and once more on page unload).
+</Step>
+
+<Step>
+### Watch it back
+
+Open `http://localhost:3000`, click your session in the list, and scrub the
+timeline. The replay stage is the hero; everything else recedes.
+
+![The TinyReplay dashboard replaying a session: session list on the left, the replay stage in the center, and the event timeline on the right.](/dashboard.png)
+</Step>
+</Steps>
+
+<Callout type="ok" title="Nothing showed up?">
+  Sessions appear after the first flush (≈5 s) or on page unload. Set
+  `debug: true` in `init()` to log capture and flush activity to the console.
+</Callout>
+
+## Next
+
+- Tune the recorder in the [SDK API](/docs/sdk/api).
+- Lock down ingestion and the dashboard in [Auth](/docs/server/auth).
+- See a runnable example in [Example app](/docs/getting-started/example-app).

@@ -1,0 +1,36 @@
+{
+  "name": "@tinyreplay/docs",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "TinyReplay documentation site.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "postinstall": "fumadocs-mdx",
+    "lint": "eslint app components lib --max-warnings 0",
+    "typecheck": "fumadocs-mdx && tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^15.5.18",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "fumadocs-ui": "^15.8.5",
+    "fumadocs-core": "^15.8.5",
+    "motion": "^12.39.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@tailwindcss/postcss": "^4.3.0",
+    "tailwindcss": "^4.3.0",
+    "fumadocs-mdx": "^12.0.3",
+    "typescript": "^5.7.2"
+  }
+}

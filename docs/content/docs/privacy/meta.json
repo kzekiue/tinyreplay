@@ -1,0 +1,5 @@
+{
+  "title": "Privacy",
+  "icon": "shield",
+  "pages": ["masking", "ignored-elements", "network-capture", "guarantees"]
+}

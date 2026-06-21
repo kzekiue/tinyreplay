@@ -1,0 +1,626 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* Pull Fumadocs UI classes into the Tailwind scan (relative to this file). */
+@source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+/* ============================================================================
+   TinyReplay docs design system.
+
+   Ported from apps/server/src/app/globals.css so the docs and the dashboard
+   read as the same machined object: warm graphite neutrals (hue 80), a single
+   anodized-orange accent, one top-left light source for every bevel and well.
+
+   Dark is the default (matches the dashboard). Light is derived from the same
+   hues for an almost-white #f7f7f5 / #111111 reading.
+   ============================================================================ */
+
+@theme inline {
+  --font-sans: var(--font-geist), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-desk: var(--desk);
+  --color-panel: var(--panel);
+  --color-surface: var(--surface);
+  --color-surface-hi: var(--surface-hi);
+  --color-inset: var(--inset);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-weak: var(--accent-weak);
+  --color-accent-line: var(--accent-line);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+}
+
+/* ---------------------------------------------------------- Dark (default) --- */
+:root,
+.dark {
+  --desk: oklch(15.5% 0.006 80);
+  --panel: oklch(19% 0.007 80);
+  --surface: oklch(23% 0.008 80);
+  --surface-hi: oklch(25.5% 0.008 80);
+  --inset: oklch(12% 0.005 80);
+  --line: oklch(28% 0.008 80);
+  --line-strong: oklch(36% 0.01 80);
+
+  --ink: oklch(95% 0.005 80);
+  --ink-2: oklch(81% 0.008 80);
+  --muted: oklch(63% 0.01 80);
+  --faint: oklch(49% 0.011 80);
+
+  --accent: oklch(67% 0.142 55);
+  --accent-ink: oklch(75% 0.13 58);
+  --accent-hover: oklch(72% 0.148 55);
+  --accent-weak: oklch(31% 0.06 55);
+  --accent-line: oklch(50% 0.11 55);
+  --accent-contrast: oklch(16% 0.02 60);
+
+  --danger: oklch(64% 0.2 25);
+  --ok: oklch(72% 0.15 152);
+  --warn: oklch(80% 0.13 78);
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 9px;
+  --radius-pill: 999px;
+
+  /* Material - one light source (top). */
+  --bevel-hi: oklch(100% 0 0 / 0.07);
+  --bevel-lo: oklch(0% 0 0 / 0.55);
+  --surface-grad: linear-gradient(var(--surface-hi), var(--surface));
+  --raise-1: inset 0 1px 0 var(--bevel-hi), 0 1px 1.5px oklch(0% 0 0 / 0.4),
+    0 2px 4px -1px oklch(0% 0 0 / 0.34);
+  --raise-2: inset 0 1px 0 var(--bevel-hi), 0 2px 5px -1px oklch(0% 0 0 / 0.46),
+    0 8px 18px -6px oklch(0% 0 0 / 0.5);
+  --press-in: inset 0 2px 3px oklch(0% 0 0 / 0.5), inset 0 0 0 1px oklch(0% 0 0 / 0.18);
+  --well: inset 0 1px 3px oklch(0% 0 0 / 0.45), inset 0 -1px 0 var(--bevel-hi);
+  --latch: inset 0 1px 3px oklch(0% 0 0 / 0.4);
+  --engrave: 0 1px 0 var(--bevel-hi);
+
+  /* Manufactured parts - extruded keys, milled tracks, LCD glass, rivets.
+     ONE light source, top-centre. Ported verbatim from the dashboard so the
+     docs and the app read as the same machined object. */
+  --specular: oklch(100% 0 0 / 0.16);
+  --key-face:
+    radial-gradient(125% 90% at 50% -10%, oklch(100% 0 0 / 0.09), transparent 60%),
+    linear-gradient(oklch(100% 0 0 / 0.05), oklch(0% 0 0 / 0.05));
+  --key-raise:
+    inset 0 1px 0 var(--specular), inset 0 -2px 3px oklch(0% 0 0 / 0.3),
+    inset 1px 0 0 oklch(100% 0 0 / 0.03), inset -1px 0 0 oklch(0% 0 0 / 0.16),
+    0 1px 0 oklch(0% 0 0 / 0.55), 0 2px 0 oklch(0% 0 0 / 0.5),
+    0 3px 0 oklch(0% 0 0 / 0.45), 0 4px 1px oklch(0% 0 0 / 0.45),
+    0 6px 10px -2px oklch(0% 0 0 / 0.55);
+  --key-hover:
+    inset 0 1px 0 var(--specular), inset 0 -2px 3px oklch(0% 0 0 / 0.28),
+    inset 1px 0 0 oklch(100% 0 0 / 0.04), inset -1px 0 0 oklch(0% 0 0 / 0.16),
+    0 1px 0 oklch(0% 0 0 / 0.55), 0 2px 0 oklch(0% 0 0 / 0.5),
+    0 3px 0 oklch(0% 0 0 / 0.45), 0 4px 1px oklch(0% 0 0 / 0.45),
+    0 8px 16px -3px oklch(0% 0 0 / 0.6);
+  --key-press:
+    inset 0 2px 5px oklch(0% 0 0 / 0.5), inset 0 1px 0 oklch(0% 0 0 / 0.35),
+    inset 0 -1px 0 oklch(100% 0 0 / 0.04), 0 1px 0 oklch(0% 0 0 / 0.4),
+    0 1px 2px oklch(0% 0 0 / 0.4);
+  --key-travel: 3px;
+  --track:
+    inset 0 2px 4px oklch(0% 0 0 / 0.55), inset 0 -1px 0 oklch(100% 0 0 / 0.05),
+    inset 0 1px 0 oklch(0% 0 0 / 0.4);
+  --lcd-glass: oklch(20% 0.022 150);
+  --lcd-ink: oklch(78% 0.11 152);
+  --lcd-recess:
+    inset 0 2px 5px oklch(0% 0 0 / 0.6), inset 0 -1px 0 oklch(100% 0 0 / 0.05),
+    0 1px 0 var(--bevel-hi);
+  --screw:
+    radial-gradient(circle at 42% 34%, oklch(100% 0 0 / 0.3), transparent 24%),
+    radial-gradient(circle at 50% 46%,
+      oklch(40% 0.006 80) 0 38%, oklch(26% 0.005 80) 38% 44%,
+      oklch(0% 0 0 / 0.6) 45% 49%, transparent 50%);
+
+  /* Interaction films + motion - one physics for the whole machine. */
+  --hover: color-mix(in oklch, var(--surface), var(--ink) 9%);
+  --hover-hi: color-mix(in oklch, var(--surface-hi), var(--ink) 9%);
+  --press: color-mix(in oklch, var(--surface), var(--ink) 2%);
+  --hover-film: oklch(100% 0 0 / 0.05);
+  --shadow-pop: 0 22px 50px -16px oklch(0% 0 0 / 0.7), 0 4px 10px oklch(0% 0 0 / 0.45);
+  --dur-1: 90ms;
+  --dur-press: 50ms;
+  --dur-2: 150ms;
+  --dur-3: 240ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-press: cubic-bezier(0.16, 0.84, 0.36, 1);
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Map Fumadocs UI tokens onto the machine palette. */
+  --color-fd-background: var(--desk);
+  --color-fd-foreground: var(--ink);
+  --color-fd-muted: var(--panel);
+  --color-fd-muted-foreground: var(--muted);
+  --color-fd-popover: var(--surface);
+  --color-fd-popover-foreground: var(--ink);
+  --color-fd-card: var(--surface);
+  --color-fd-card-foreground: var(--ink);
+  --color-fd-border: var(--line);
+  --color-fd-primary: var(--accent);
+  --color-fd-primary-foreground: var(--accent-contrast);
+  --color-fd-secondary: var(--panel);
+  --color-fd-secondary-foreground: var(--ink-2);
+  --color-fd-accent: var(--surface-hi);
+  --color-fd-accent-foreground: var(--ink);
+  --color-fd-ring: var(--accent);
+}
+
+/* --------------------------------------------------------------------- Light --- */
+.light {
+  --desk: oklch(97.6% 0.0025 80);
+  --panel: oklch(95.6% 0.003 80);
+  --surface: oklch(99.2% 0.0015 80);
+  --surface-hi: oklch(100% 0 0);
+  --inset: oklch(93.5% 0.004 80);
+  --line: oklch(89.5% 0.004 80);
+  --line-strong: oklch(82% 0.006 80);
+
+  --ink: oklch(20% 0.006 80);
+  --ink-2: oklch(37% 0.008 80);
+  --muted: oklch(52% 0.01 80);
+  --faint: oklch(64% 0.01 80);
+
+  --accent: oklch(63% 0.16 50);
+  --accent-ink: oklch(56% 0.17 48);
+  --accent-hover: oklch(58% 0.17 48);
+  --accent-weak: oklch(92% 0.05 60);
+  --accent-line: oklch(78% 0.1 55);
+  --accent-contrast: oklch(99% 0.01 80);
+
+  --danger: oklch(55% 0.2 25);
+  --ok: oklch(55% 0.14 152);
+  --warn: oklch(62% 0.13 70);
+
+  --bevel-hi: oklch(100% 0 0 / 0.9);
+  --bevel-lo: oklch(0% 0 0 / 0.12);
+  --surface-grad: linear-gradient(var(--surface-hi), var(--surface));
+  --raise-1: inset 0 1px 0 var(--bevel-hi), 0 1px 1px oklch(0% 0 0 / 0.05),
+    0 1px 2px oklch(0% 0 0 / 0.06);
+  --raise-2: inset 0 1px 0 var(--bevel-hi), 0 2px 4px -1px oklch(0% 0 0 / 0.08),
+    0 8px 18px -6px oklch(0% 0 0 / 0.12);
+  --press-in: inset 0 2px 3px oklch(0% 0 0 / 0.1), inset 0 0 0 1px oklch(0% 0 0 / 0.05);
+  --well: inset 0 1px 2px oklch(0% 0 0 / 0.08), inset 0 -1px 0 var(--bevel-hi);
+  --latch: inset 0 1px 3px oklch(40% 0.03 85 / 0.18);
+  --engrave: 0 1px 0 var(--bevel-hi);
+  --shadow-pop: 0 24px 52px -18px oklch(40% 0.03 85 / 0.3), 0 4px 10px oklch(40% 0.03 85 / 0.12);
+
+  /* Pale-plastic parts: bright top, warm-grey side walls (lit ABS in shade). */
+  --specular: oklch(100% 0 0 / 0.95);
+  --key-face:
+    radial-gradient(125% 90% at 50% -10%, oklch(100% 0 0 / 0.8), transparent 62%),
+    linear-gradient(oklch(100% 0 0 / 0.5), oklch(40% 0.02 85 / 0.06));
+  --key-raise:
+    inset 0 1px 0 var(--specular), inset 0 -2px 3px oklch(40% 0.02 85 / 0.12),
+    inset 1px 0 0 oklch(100% 0 0 / 0.5), inset -1px 0 0 oklch(40% 0.02 85 / 0.1),
+    0 1px 0 oklch(78% 0.01 85), 0 2px 0 oklch(73% 0.01 85),
+    0 3px 0 oklch(68% 0.012 85), 0 4px 1px oklch(64% 0.012 85),
+    0 7px 11px -2px oklch(45% 0.02 85 / 0.3);
+  --key-hover:
+    inset 0 1px 0 var(--specular), inset 0 -2px 3px oklch(40% 0.02 85 / 0.1),
+    inset 1px 0 0 oklch(100% 0 0 / 0.6), inset -1px 0 0 oklch(40% 0.02 85 / 0.1),
+    0 1px 0 oklch(78% 0.01 85), 0 2px 0 oklch(73% 0.01 85),
+    0 3px 0 oklch(68% 0.012 85), 0 4px 1px oklch(64% 0.012 85),
+    0 10px 18px -3px oklch(45% 0.02 85 / 0.34);
+  --key-press:
+    inset 0 2px 5px oklch(45% 0.02 85 / 0.28), inset 0 1px 0 oklch(45% 0.02 85 / 0.2),
+    0 1px 0 oklch(80% 0.01 85), 0 1px 2px oklch(45% 0.02 85 / 0.2);
+  --key-travel: 3px;
+  --track:
+    inset 0 2px 4px oklch(45% 0.02 85 / 0.2), inset 0 -1px 0 var(--bevel-hi),
+    inset 0 1px 0 oklch(45% 0.02 85 / 0.15);
+  --lcd-glass: oklch(86% 0.03 150);
+  --lcd-ink: oklch(40% 0.11 152);
+  --lcd-recess:
+    inset 0 2px 5px oklch(45% 0.02 85 / 0.22), inset 0 -1px 0 var(--bevel-hi),
+    0 1px 0 var(--bevel-hi);
+  --screw:
+    radial-gradient(circle at 42% 34%, oklch(100% 0 0 / 0.9), transparent 24%),
+    radial-gradient(circle at 50% 46%,
+      oklch(82% 0.008 85) 0 38%, oklch(72% 0.01 85) 38% 44%,
+      oklch(45% 0.02 85 / 0.5) 45% 49%, transparent 50%);
+
+  --hover: color-mix(in oklch, var(--surface), var(--ink) 6%);
+  --hover-hi: color-mix(in oklch, var(--surface-hi), var(--ink) 6%);
+  --press: color-mix(in oklch, var(--surface), var(--ink) 3%);
+  --hover-film: oklch(0% 0 0 / 0.04);
+}
+
+/* -------------------------------------------------------------------- Base --- */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv01', 'cv03', 'ss01';
+  }
+
+  body {
+    background: var(--desk);
+    color: var(--ink);
+  }
+
+  ::selection {
+    background: var(--accent-weak);
+    color: var(--ink);
+  }
+
+  /* Tighter, denser code than the prose default. */
+  code,
+  kbd,
+  pre {
+    font-family: var(--font-mono);
+    font-feature-settings: 'zero', 'cv01';
+  }
+}
+
+/* ------------------------------------------------------------ Material kit --- */
+@layer components {
+  /* A moulded, raised face - used for cards, terminals, buttons. */
+  .tr-raise {
+    background-image: var(--surface-grad);
+    box-shadow: var(--raise-1);
+    border: 1px solid var(--line);
+  }
+  .tr-raise-2 {
+    background-image: var(--surface-grad);
+    box-shadow: var(--raise-2);
+    border: 1px solid var(--line);
+  }
+  /* A recessed well - used for tracks, insets, code wells. */
+  .tr-well {
+    background: var(--inset);
+    box-shadow: var(--well);
+    border: 1px solid var(--line);
+  }
+
+  /* An extruded key: a moulded face on ~4px of side wall that casts a shadow on
+     the bench. Hover lifts the cast shadow; pressing drives it DOWN into its
+     housing - walls collapse, face squashes, then springs back. */
+  .tr-key {
+    border: 1px solid var(--line-strong);
+    background-color: var(--surface);
+    background-image: var(--key-face);
+    box-shadow: var(--key-raise);
+    transform-origin: center bottom;
+    transition:
+      background-color var(--dur-1) var(--ease-out),
+      color var(--dur-1) var(--ease-out),
+      box-shadow var(--dur-2) var(--ease-out),
+      transform var(--dur-2) var(--ease-spring);
+  }
+  .tr-key:hover {
+    background-color: var(--hover);
+    box-shadow: var(--key-hover);
+  }
+  .tr-key:active {
+    transform: translateY(var(--key-travel)) scaleY(0.97);
+    background-color: var(--press);
+    box-shadow: var(--key-press);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-press);
+  }
+
+  /* A milled channel - holds detented keys (segmented control, preset stacks). */
+  .tr-track {
+    background: var(--inset);
+    box-shadow: var(--track);
+    border: 1px solid oklch(0% 0 0 / 0.35);
+  }
+
+  /* A dark LCD window - recessed glass that text glows faintly off. */
+  .tr-lcd {
+    background: var(--lcd-glass);
+    box-shadow: var(--lcd-recess);
+    color: var(--lcd-ink);
+  }
+
+  /* A countersunk rivet, lit top-left - drop into panel corners. */
+  .tr-screw {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--screw);
+  }
+
+  /* Tiny machined label, etched into the faceplate. */
+  .tr-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-shadow: var(--engrave);
+  }
+  /* Hairline grid backdrop, very faint. */
+  .tr-grid {
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    opacity: 0.4;
+  }
+
+  /* Buttons - real extruded keys. Same recipe as the dashboard's .btn. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4375rem;
+    height: 2.5rem;
+    padding-inline: 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--line-strong);
+    background-color: var(--surface);
+    background-image: var(--key-face);
+    box-shadow: var(--key-raise);
+    color: var(--ink-2);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transform-origin: center bottom;
+    transition:
+      background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out),
+      box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+  }
+  .btn:hover { background-color: var(--hover); color: var(--ink); box-shadow: var(--key-hover); }
+  .btn:active {
+    transform: translateY(var(--key-travel)) scaleY(0.97);
+    background-color: var(--press);
+    box-shadow: var(--key-press);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-press);
+  }
+  .btn-primary {
+    background-color: var(--accent);
+    border-color: color-mix(in oklch, var(--accent), black 22%);
+    color: oklch(99% 0.02 60);
+    text-shadow: 0 1px 1px oklch(0% 0 0 / 0.3);
+  }
+  .btn-primary:hover { background-color: var(--accent-hover); color: oklch(99% 0.02 60); }
+  /* A flush surface marking, no extrusion. */
+  .btn-ghost {
+    border-color: transparent;
+    background-image: none;
+    background-color: transparent;
+    box-shadow: none;
+    color: var(--muted);
+    transform: none;
+  }
+  .btn-ghost:hover { background-color: var(--hover-film); color: var(--ink); box-shadow: none; }
+  .btn-ghost:active { box-shadow: none; transform: translateY(1px); }
+
+  /* A moulded keycap for inline shortcuts. */
+  .kbd {
+    display: inline-block;
+    min-width: 1.25rem;
+    text-align: center;
+    padding: 0.0625rem 0.3125rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background-image: var(--surface-grad);
+    box-shadow: var(--raise-1);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+}
+
+/* ====================================================================== Docs prose ===
+   Fumadocs ships a loose default reading rhythm (1rem / 1.75 line-height, 2em
+   heading gaps). The home page is a tight machined faceplate; the docs body must
+   read as the same object. These rules re-skin the article into a dense
+   spec-sheet: a compact type scale, hairline section dividers lit by one
+   anodized tick, inline code as moulded keycaps, and milled tables.
+
+   Scoped to #nd-page so the search popover and home stay untouched. Left
+   unlayered on purpose: Fumadocs' typography lives in the `utilities` layer with
+   :where() (near-zero specificity), so these element selectors win cleanly. */
+#nd-page .prose {
+  font-size: 0.9375rem;
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+#nd-page .prose p {
+  margin: 0.7em 0;
+}
+#nd-page .prose strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+#nd-page .prose a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-line);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color var(--dur-1) var(--ease-out);
+}
+#nd-page .prose a:hover {
+  color: var(--accent-hover);
+  text-decoration-color: var(--accent);
+}
+
+/* Section dividers - a hairline across the column, lit at the left by one
+   anodized tick. The signature: every H2 is a labelled track on the faceplate. */
+#nd-page .prose :is(h2, h3, h4) {
+  scroll-margin-top: 5rem;
+  color: var(--ink);
+  letter-spacing: -0.012em;
+}
+#nd-page .prose h2 {
+  position: relative;
+  margin: 2em 0 0.6em;
+  padding-top: 1em;
+  border-top: 1px solid var(--line);
+  font-size: 1.2rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+#nd-page .prose h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 28px;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-line);
+}
+#nd-page .prose > h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+#nd-page .prose > h2:first-child::before {
+  display: none;
+}
+#nd-page .prose h3 {
+  margin: 1.5em 0 0.4em;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+#nd-page .prose h4 {
+  margin: 1.2em 0 0.3em;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* Inline code - a small moulded keycap, etched in anodized ink. (Code inside a
+   `pre` is a Shiki block and must keep its own styling, hence :not(pre).) */
+#nd-page .prose :not(pre) > code {
+  padding: 0.08em 0.36em;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--engrave);
+  font-size: 0.84em;
+  font-weight: 450;
+  color: var(--accent-ink);
+}
+#nd-page .prose :not(pre) > code::before,
+#nd-page .prose :not(pre) > code::after {
+  content: none;
+}
+
+/* Lists - tight, with quiet milled markers. Glow is reserved for the H2 tick. */
+#nd-page .prose ul,
+#nd-page .prose ol {
+  margin: 0.7em 0;
+}
+#nd-page .prose li {
+  margin: 0.26em 0;
+}
+#nd-page .prose ul {
+  list-style: none;
+  padding-left: 1.1em;
+}
+#nd-page .prose ul > li {
+  position: relative;
+}
+#nd-page .prose ul > li::before {
+  content: '';
+  position: absolute;
+  left: -1.05em;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--line-strong);
+}
+#nd-page .prose ol {
+  padding-left: 1.4em;
+}
+#nd-page .prose ol > li::marker {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+/* Tables - a milled spec sheet: engraved mono header, hairline rows, hover film. */
+#nd-page .prose table {
+  display: table;
+  width: 100%;
+  margin: 1.1em 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  box-shadow: var(--raise-1);
+  font-size: 0.84rem;
+}
+#nd-page .prose thead th {
+  padding: 0.5em 0.7em;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+}
+#nd-page .prose tbody td {
+  padding: 0.45em 0.7em;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  vertical-align: top;
+}
+#nd-page .prose tbody tr:first-child td {
+  border-top: 0;
+}
+#nd-page .prose tbody tr:hover td {
+  background: var(--hover-film);
+}
+
+/* Quotes and rules - one engraved rail, one engraved line. */
+#nd-page .prose blockquote {
+  margin: 1em 0;
+  padding: 0.6em 0.85em;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+  font-style: normal;
+}
+#nd-page .prose blockquote p {
+  margin: 0.4em 0;
+}
+#nd-page .prose hr {
+  margin: 1.6em 0;
+  border: 0;
+  height: 1px;
+  background: var(--line);
+  box-shadow: var(--engrave);
+}
+
+/* Page title - tighten the tracking to match the machined display type. */
+#nd-page h1 {
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "name": "tinyreplay",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Small self-hosted session replay for local-first teams.",
+  "packageManager": "npm@10.9.2",
+  "homepage": "https://github.com/kzekiue/tinyreplay#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kzekiue/tinyreplay.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kzekiue/tinyreplay/issues"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "npm run build -w packages/sdk && concurrently \"npm run dev -w packages/sdk\" \"npm run dev -w apps/server\"",
+    "dev:docs": "npm run dev -w docs",
+    "build": "npm run build -w packages/sdk && npm run build -w apps/server && npm run build -w docs",
+    "start": "npm run start -w apps/server",
+    "start:docs": "npm run start -w docs",
+    "test": "npm run test -w packages/sdk && npm run test -w apps/server",
+    "lint": "npm run lint -w packages/sdk && npm run lint -w apps/server && npm run lint -w docs",
+    "typecheck": "npm run typecheck -w packages/sdk && npm run typecheck -w apps/server && npm run typecheck -w docs",
+    "check:format": "node scripts/check-format.mjs",
+    "check:forbidden": "node scripts/check-prose.mjs",
+    "check:prose": "npm run check:forbidden",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check:dead-code": "npm run typecheck",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check": "npm run check:format && npm run lint && npm run check:architecture && npm run check:dead-code && npm run check:forbidden && npm run check:secrets && npm run build && npm run test",
+    "clean": "node -e \"const{rmSync}=require('node:fs');['packages/sdk/dist','apps/server/.next','apps/server/public/sdk','packages/sdk/coverage','apps/server/coverage','docs/.next','docs/.source'].forEach(p=>rmSync(p,{recursive:true,force:true}))\""
+  },
+  "overrides": {
+    "postcss": ">=8.5.10",
+    "esbuild": ">=0.28.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.16.0",
+    "globals": "^15.13.0",
+    "typescript-eslint": "^8.18.0"
+  }
+}

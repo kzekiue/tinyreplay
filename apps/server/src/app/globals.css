@@ -1,0 +1,3152 @@
+/* ============================================================================
+   TinyReplay - "Forensic" design system.
+
+   A calm, dense instrument for inspecting recorded sessions. Dark graphite is
+   the primary surface; light is a faithful adaptation. Structure is carried by
+   hairlines, restrained elevation and a single indigo signal - never by
+   decoration. The replay viewport is a dark framed plane in both themes: the
+   evidence under glass. Everything tactile happens through interaction, not
+   through gimmick visuals.
+
+   One sans (Geist) for chrome, one mono (JetBrains Mono) for data and time.
+   Every color, space, radius, shadow and motion value is a token. No control
+   carries a hardcoded one.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- Tokens --- */
+
+:root {
+  color-scheme: dark;
+
+  --sans: var(--font-sans), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Neutrals - warm graphite (hue 80), the colour of anodised dark metal and
+     moulded ABS. Very low chroma so the whole machine reads as one material;
+     elevation reads as a lit top edge, not a lighter fill. */
+  --desk: oklch(15.5% 0.006 80);      /* app background, deepest plane          */
+  --panel: oklch(19% 0.007 80);       /* rails, header, framed panels           */
+  --surface: oklch(23% 0.008 80);     /* cards, inputs, buttons - moulded face   */
+  --surface-hi: oklch(25.5% 0.008 80);/* lit top of a moulded face (gradient)    */
+  --inset: oklch(12% 0.005 80);       /* wells, recessed tracks - black rubber   */
+  --line: oklch(28% 0.008 80);        /* hairline divider                       */
+  --line-strong: oklch(36% 0.01 80);  /* control edge / framing rule            */
+
+  --ink: oklch(95% 0.005 80);         /* primary text                           */
+  --ink-2: oklch(81% 0.008 80);       /* secondary text                         */
+  --muted: oklch(63% 0.01 80);        /* tertiary / labels                      */
+  --faint: oklch(49% 0.011 80);       /* quietest text, decorative glyphs       */
+
+  /* Anodised orange signal - the one chromatic accent: selection, playhead,
+     focus, brand. The colour of a machined indicator, never neon. */
+  --accent: oklch(67% 0.142 55);
+  --accent-ink: oklch(75% 0.13 58);   /* accent legible as text on dark         */
+  --accent-hover: oklch(72% 0.148 55);
+  --accent-weak: oklch(31% 0.06 55);  /* selection / active wash                */
+  --accent-line: oklch(50% 0.11 55);  /* accent-tinted border                   */
+
+  /* Semantic status. */
+  --danger: oklch(64% 0.2 25);
+  --danger-ink: oklch(74% 0.17 28);
+  --danger-weak: oklch(30% 0.09 25);
+  --ok: oklch(72% 0.15 152);
+  --ok-weak: oklch(30% 0.07 152);
+  --warn: oklch(80% 0.13 78);
+  /* Legacy alias retained for the recording dot. */
+  --rec: var(--danger);
+  --rec-weak: var(--danger-weak);
+
+  /* Event signal colors - the single source of truth for ticks, icons, counts. */
+  --ev-route: oklch(70% 0.13 245);    /* navigation - blue, kept distinct from orange */
+  --ev-error: var(--danger);
+  --ev-warn: var(--warn);
+  --ev-net: var(--ok);
+  --ev-click: var(--accent-ink);
+  --ev-console: var(--muted);
+
+  /* The replay stage - a dark plane in BOTH themes. Viewport, its rail and the
+     transport deck live here; tokens persist across the light adaptation. */
+  --stage: oklch(14% 0.006 80);       /* viewport plane, darkest                */
+  --stage-rail: oklch(18.5% 0.007 80);/* rail + transport deck                  */
+  --stage-line: oklch(27% 0.008 80);
+  --stage-muted: oklch(63% 0.01 80);
+  --stage-ink: oklch(94% 0.005 80);
+  --stage-hover: oklch(100% 0 0 / 0.05);
+  --stage-active: oklch(100% 0 0 / 0.08);
+
+  /* Timeline material - a recessed rubber track, fine baseline ticks, an amber
+     fill and a lit machined playhead. */
+  --tl-track: var(--inset);
+  --tl-tick: oklch(100% 0 0 / 0.07);
+  --tl-fill: oklch(67% 0.142 55 / 0.24);
+  --tl-playhead: var(--accent);
+  --tl-marker-rest: var(--stage-muted);
+
+  /* Replay viewport states. */
+  --vp-bloom: oklch(100% 0 0 / 0.025);
+  --vp-mask: oklch(70% 0.012 80 / 0.16); /* hatch fill reserved for masked regions */
+
+  /* Geometry - crisp, tight, dense. */
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 9px;
+  --radius-pill: 999px;
+
+  /* ---- Material: bevels, moulded faces, wells, presses --------------------
+     The whole instrument is built from four recipes. A raised face catches a
+     light top edge and casts a contact shadow; a well is pushed in with an
+     inner shadow and a faint lit bottom lip; a press collapses the raise. One
+     rule everywhere = one machine. */
+  --bevel-hi: oklch(100% 0 0 / 0.07);   /* top catch-light on a moulded edge    */
+  --bevel-lo: oklch(0% 0 0 / 0.55);     /* contact / under-edge                  */
+  --surface-grad: linear-gradient(var(--surface-hi), var(--surface));
+
+  /* Raised faces - buttons, cards, keys. raise-1 sits on the bench, raise-2 lifts
+     on hover. Both keep the lit top edge so the face always reads as moulded. */
+  --raise-1: inset 0 1px 0 var(--bevel-hi),
+    0 1px 1.5px oklch(0% 0 0 / 0.4),
+    0 2px 4px -1px oklch(0% 0 0 / 0.34);
+  --raise-2: inset 0 1px 0 var(--bevel-hi),
+    0 2px 5px -1px oklch(0% 0 0 / 0.46),
+    0 8px 18px -6px oklch(0% 0 0 / 0.5);
+  /* Pressed - the face pushes into its socket: raise gone, inner shadow on. */
+  --press-in: inset 0 2px 3px oklch(0% 0 0 / 0.5),
+    inset 0 0 0 1px oklch(0% 0 0 / 0.18);
+  /* Wells - inputs, tracks, segmented tray, recessed counters. */
+  --well: inset 0 1px 3px oklch(0% 0 0 / 0.45),
+    inset 0 -1px 0 var(--bevel-hi);
+  /* Latched - a depressed segment/chip held down: socket shadow + amber rim. */
+  --latch: inset 0 1px 3px oklch(0% 0 0 / 0.4);
+  /* Engraved label - text etched into the faceplate. */
+  --engrave: 0 1px 0 var(--bevel-hi);
+
+  /* ---- Manufactured parts: extruded keys, milled tracks, LCD glass ---------
+     ONE light source, top-centre. Top edges catch a specular highlight; side
+     walls fall into shadow as a stack of solid 1px shadows (real visible
+     height); the part casts a soft shadow onto the bench below. Pressing
+     collapses the wall and drops the part into its housing. */
+
+  /* Specular catch-light + the moulded face (radial hot-spot over a vertical
+     gradient = a curved plastic top under a single lamp). */
+  --specular: oklch(100% 0 0 / 0.16);
+  --key-face:
+    radial-gradient(125% 90% at 50% -10%, oklch(100% 0 0 / 0.09), transparent 60%),
+    linear-gradient(oklch(100% 0 0 / 0.05), oklch(0% 0 0 / 0.05));
+
+  /* Side walls (stacked solids) + chamfer + cast shadow - a key ~4px proud. */
+  --key-raise:
+    inset 0 1px 0 var(--specular),
+    inset 0 -2px 3px oklch(0% 0 0 / 0.3),
+    inset 1px 0 0 oklch(100% 0 0 / 0.03),
+    inset -1px 0 0 oklch(0% 0 0 / 0.16),
+    0 1px 0 oklch(0% 0 0 / 0.55),
+    0 2px 0 oklch(0% 0 0 / 0.5),
+    0 3px 0 oklch(0% 0 0 / 0.45),
+    0 4px 1px oklch(0% 0 0 / 0.45),
+    0 6px 10px -2px oklch(0% 0 0 / 0.55);
+  /* Lifted on hover - same key, a touch more cast shadow (lamp unmoved). */
+  --key-hover:
+    inset 0 1px 0 var(--specular),
+    inset 0 -2px 3px oklch(0% 0 0 / 0.28),
+    inset 1px 0 0 oklch(100% 0 0 / 0.04),
+    inset -1px 0 0 oklch(0% 0 0 / 0.16),
+    0 1px 0 oklch(0% 0 0 / 0.55),
+    0 2px 0 oklch(0% 0 0 / 0.5),
+    0 3px 0 oklch(0% 0 0 / 0.45),
+    0 4px 1px oklch(0% 0 0 / 0.45),
+    0 8px 16px -3px oklch(0% 0 0 / 0.6);
+  /* Sunk into housing - walls gone, inner shadow, faint contact line. */
+  --key-press:
+    inset 0 2px 5px oklch(0% 0 0 / 0.5),
+    inset 0 1px 0 oklch(0% 0 0 / 0.35),
+    inset 0 -1px 0 oklch(100% 0 0 / 0.04),
+    0 1px 0 oklch(0% 0 0 / 0.4),
+    0 1px 2px oklch(0% 0 0 / 0.4);
+  /* How far a key travels down into its housing, and its press squash. The
+     squash is the moulded-key illusion - flat themes neutralise it to 1. */
+  --key-travel: 3px;
+  --press-squash: 0.97;
+
+  /* Milled track - a recessed channel a switch/selector sits in. */
+  --track:
+    inset 0 2px 4px oklch(0% 0 0 / 0.55),
+    inset 0 -1px 0 oklch(100% 0 0 / 0.05),
+    inset 0 1px 0 oklch(0% 0 0 / 0.4);
+
+  /* LCD glass - a dark recessed window; text glows faintly off it. */
+  --lcd-glass: oklch(20% 0.022 150);
+  --lcd-ink: oklch(78% 0.11 152);
+  --lcd-recess:
+    inset 0 2px 5px oklch(0% 0 0 / 0.6),
+    inset 0 -1px 0 oklch(100% 0 0 / 0.05),
+    0 1px 0 var(--bevel-hi);
+
+  /* A countersunk rivet - round head set into a panel, lit from top-left. The
+     last colour stop is transparent so the square tile reads as a circle. */
+  --screw:
+    radial-gradient(circle at 42% 34%, oklch(100% 0 0 / 0.3), transparent 24%),
+    radial-gradient(circle at 50% 46%,
+      oklch(40% 0.006 80) 0 38%,
+      oklch(26% 0.005 80) 38% 44%,
+      oklch(0% 0 0 / 0.6) 45% 49%,
+      transparent 50%);
+
+  /* Compat aliases - older rules still reference these. */
+  --shadow-1: var(--raise-1);
+  --shadow-2: var(--raise-2);
+  --shadow-pop: 0 22px 50px -16px oklch(0% 0 0 / 0.7), 0 4px 10px oklch(0% 0 0 / 0.45);
+
+  /* Interaction-state films - layered over a surface so every control shares one
+     hover/press language. Mixing toward --ink lightens in dark, darkens in light,
+     so a single rule reads correctly in both themes. */
+  --hover: color-mix(in oklch, var(--surface), var(--ink) 9%);
+  --hover-hi: color-mix(in oklch, var(--surface-hi), var(--ink) 9%);
+  --press: color-mix(in oklch, var(--surface), var(--ink) 2%);
+  --hover-film: oklch(100% 0 0 / 0.05);
+  --press-travel: 1px;
+  --disabled-opacity: 0.42;
+
+  /* Focus ring - the amber selection halo, offset from the control. */
+  --focus: var(--accent);
+  --focus-w: 2px;
+  --focus-offset: 2px;
+
+  /* Motion - one physics for the whole machine. `out` decelerates to rest;
+     `snap` carries a hint of overshoot so a press feels magnetic - the control
+     settles into place rather than easing flat. `inout` for symmetric moves.
+     Hover is near-instant; nothing is slow. */
+  --dur-1: 90ms;   /* hover, press - feels instant      */
+  --dur-press: 50ms; /* the down-stroke - snaps to a hard floor */
+  --dur-2: 150ms;  /* state changes - settles smoothly  */
+  --dur-3: 240ms;  /* panel / sheet reveal              */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.34, 1.45, 0.5, 1);
+  /* The down-stroke decelerates HARD into the bottom - no overshoot, you can't
+     push a key past its floor. Release springs it back with a slight settle. */
+  --ease-press: cubic-bezier(0.16, 0.84, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.28, 0.5, 1);  /* release: springs back, gentle settle */
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --control-h: 2.25rem;
+  --rail-w: 21rem;
+  --header-h: 3.25rem;
+}
+
+@media (pointer: fine) {
+  :root { --control-h: 2rem; }
+}
+
+/* ---------------------------------------------------- Light adaptation --- */
+
+/* Default light theme. The pre-paint script resolves `system` → light/dark and
+   writes `data-theme` + `data-theme-family` on <html>. This block is the
+   classic-light palette AND the shared light material recipe - foundry-light
+   inherits this material and only re-paints the palette. The three alternate
+   families (foundry / signal / modern) are token-override blocks further down;
+   every control reads tokens, so a theme is a palette (+ optional material)
+   swap, no component CSS. Selectors pair both attributes so an alternate
+   family always beats this default on equal-mode specificity. */
+:root[data-theme='light'] {
+    color-scheme: light;
+
+    /* Off-white / warm grey: the colour of bead-blasted aluminium and pale
+       moulded plastic. Faces are near-white and catch a real highlight. */
+    --desk: oklch(95.5% 0.004 85);
+    --panel: oklch(98% 0.003 85);
+    --surface: oklch(99.4% 0.002 85);
+    --surface-hi: oklch(100% 0 0);
+    --inset: oklch(92.5% 0.005 85);
+    --line: oklch(89% 0.006 85);
+    --line-strong: oklch(80% 0.009 85);
+
+    --ink: oklch(24% 0.012 85);
+    --ink-2: oklch(38% 0.011 85);
+    --muted: oklch(50% 0.011 85);
+    --faint: oklch(62% 0.011 85);
+
+    --accent: oklch(58% 0.16 52);
+    --accent-ink: oklch(53% 0.16 50);
+    --accent-hover: oklch(53% 0.165 52);
+    --accent-weak: oklch(93% 0.05 60);
+    --accent-line: oklch(74% 0.12 55);
+
+    --danger: oklch(56% 0.21 25);
+    --danger-ink: oklch(52% 0.21 27);
+    --danger-weak: oklch(95% 0.03 25);
+    --ok: oklch(54% 0.13 152);
+    --ok-weak: oklch(94% 0.05 152);
+    --warn: oklch(64% 0.13 70);
+
+    --ev-route: oklch(56% 0.16 250);
+    --ev-net: var(--ok);
+
+    /* Pale-plastic material: a crisp white top edge, soft warm contact shadow. */
+    --bevel-hi: oklch(100% 0 0 / 0.85);
+    --bevel-lo: oklch(40% 0.03 85 / 0.22);
+    --raise-1: inset 0 1px 0 var(--bevel-hi),
+      0 1px 2px oklch(40% 0.03 85 / 0.12),
+      0 2px 4px -2px oklch(40% 0.03 85 / 0.12);
+    --raise-2: inset 0 1px 0 var(--bevel-hi),
+      0 3px 8px -2px oklch(40% 0.03 85 / 0.2),
+      0 10px 22px -8px oklch(40% 0.03 85 / 0.22);
+    --press-in: inset 0 2px 3px oklch(40% 0.03 85 / 0.22),
+      inset 0 0 0 1px oklch(40% 0.03 85 / 0.08);
+    --well: inset 0 1px 3px oklch(40% 0.03 85 / 0.16),
+      inset 0 -1px 0 var(--bevel-hi);
+    --latch: inset 0 1px 3px oklch(40% 0.03 85 / 0.18);
+    --engrave: 0 1px 0 var(--bevel-hi);
+    --shadow-pop: 0 24px 52px -18px oklch(40% 0.03 85 / 0.3), 0 4px 10px oklch(40% 0.03 85 / 0.12);
+
+    /* Pale-plastic key: bright top, side walls are warm grey (lit ABS in shade),
+       not black. Cast shadow is a soft warm grey. */
+    --specular: oklch(100% 0 0 / 0.95);
+    --key-face:
+      radial-gradient(125% 90% at 50% -10%, oklch(100% 0 0 / 0.8), transparent 62%),
+      linear-gradient(oklch(100% 0 0 / 0.5), oklch(40% 0.02 85 / 0.06));
+    --key-raise:
+      inset 0 1px 0 var(--specular),
+      inset 0 -2px 3px oklch(40% 0.02 85 / 0.09),
+      inset 1px 0 0 oklch(100% 0 0 / 0.5),
+      inset -1px 0 0 oklch(40% 0.02 85 / 0.08),
+      0 1px 0 oklch(83% 0.008 85),
+      0 2px 0 oklch(80% 0.008 85),
+      0 3px 0 oklch(77% 0.009 85),
+      0 4px 1px oklch(74% 0.01 85),
+      0 6px 14px -3px oklch(56% 0.014 85 / 0.18);
+    --key-hover:
+      inset 0 1px 0 var(--specular),
+      inset 0 -2px 3px oklch(40% 0.02 85 / 0.08),
+      inset 1px 0 0 oklch(100% 0 0 / 0.6),
+      inset -1px 0 0 oklch(40% 0.02 85 / 0.08),
+      0 1px 0 oklch(83% 0.008 85),
+      0 2px 0 oklch(80% 0.008 85),
+      0 3px 0 oklch(77% 0.009 85),
+      0 4px 1px oklch(74% 0.01 85),
+      0 9px 20px -4px oklch(54% 0.014 85 / 0.2);
+    --key-press:
+      inset 0 2px 5px oklch(45% 0.02 85 / 0.28),
+      inset 0 1px 0 oklch(45% 0.02 85 / 0.2),
+      0 1px 0 oklch(80% 0.01 85),
+      0 1px 2px oklch(45% 0.02 85 / 0.2);
+    --track:
+      inset 0 2px 4px oklch(45% 0.02 85 / 0.2),
+      inset 0 -1px 0 var(--bevel-hi),
+      inset 0 1px 0 oklch(45% 0.02 85 / 0.15);
+    --lcd-glass: oklch(86% 0.03 150);
+    --lcd-ink: oklch(40% 0.11 152);
+    --lcd-recess:
+      inset 0 2px 5px oklch(45% 0.02 85 / 0.22),
+      inset 0 -1px 0 var(--bevel-hi),
+      0 1px 0 var(--bevel-hi);
+    --screw:
+      radial-gradient(circle at 42% 34%, oklch(100% 0 0 / 0.9), transparent 24%),
+      radial-gradient(circle at 50% 46%,
+        oklch(82% 0.008 85) 0 38%,
+        oklch(72% 0.01 85) 38% 44%,
+        oklch(45% 0.02 85 / 0.5) 45% 49%,
+        transparent 50%);
+
+    --hover-film: oklch(0% 0 0 / 0.04);
+
+    /* Stage follows the theme: a pale plane the white recorded iframe sits on,
+       with a slightly lifted rail deck above it. */
+    --stage: oklch(93.5% 0.004 85);
+    --stage-rail: oklch(96.5% 0.003 85);
+    --stage-line: oklch(85% 0.006 85);
+    --stage-muted: oklch(50% 0.011 85);
+    --stage-ink: oklch(24% 0.012 85);
+    --stage-hover: oklch(0% 0 0 / 0.05);
+    --stage-active: oklch(0% 0 0 / 0.08);
+    --vp-bloom: oklch(0% 0 0 / 0.02);
+}
+
+/* ========================================================================== */
+/*  ALTERNATE THEME FAMILIES                                                   */
+/*  Each is a token-override block; the classic material recipe (extruded keys,*/
+/*  milled tracks) is inherited unless a family deliberately changes it.       */
+/*  FOUNDRY keeps full material (palette-only). SIGNAL flattens it. MODERN     */
+/*  frosts it. classic stays the flagship and is untouched.                   */
+/* ========================================================================== */
+
+/* ---- FOUNDRY - a midnight workshop. Warm espresso graphite, brass signal.
+   Modern and flat: a serious developer surface, not a tactile machine. Shares
+   the flat material recipe (crisp 1px edge, a whisper of warm shadow); the only
+   thing kept from the workshop is the palette - warm graphite and brass. */
+:root[data-theme-family='foundry'] {
+  --surface-grad: var(--surface);
+  --key-face: none;
+  --specular: transparent;
+  --engrave: none;
+  --bevel-hi: transparent;
+  --key-travel: 1px;
+  --press-squash: 1;
+  --screw: none;
+}
+
+:root[data-theme-family='foundry'][data-theme='dark'] {
+  --desk: oklch(13% 0.012 60);
+  --panel: oklch(16.5% 0.014 58);
+  --surface: oklch(20% 0.016 56);
+  --surface-hi: oklch(22.5% 0.016 56);
+  --inset: oklch(10% 0.01 58);
+  --line: oklch(26% 0.016 56);
+  --line-strong: oklch(34% 0.02 56);
+
+  --ink: oklch(92% 0.012 70);
+  --ink-2: oklch(78% 0.015 68);
+  --muted: oklch(60% 0.018 64);
+  --faint: oklch(46% 0.018 60);
+
+  --accent: oklch(72% 0.12 75);          /* brass */
+  --accent-ink: oklch(79% 0.11 78);
+  --accent-hover: oklch(77% 0.125 75);
+  --accent-weak: oklch(30% 0.055 70);
+  --accent-line: oklch(52% 0.1 72);
+
+  /* Status re-tinted to belong: warmed toward brass, chroma at the accent's
+     loudness. ev-error/warn/net are var() aliases of these, so they follow. */
+  --danger: oklch(64% 0.17 32);
+  --danger-ink: oklch(72% 0.15 34);
+  --danger-weak: oklch(30% 0.08 32);
+  --ok: oklch(72% 0.11 150);             /* warm olive-green, not cold 152 */
+  --ok-weak: oklch(30% 0.06 150);
+  --warn: oklch(80% 0.12 80);
+  --ev-route: oklch(68% 0.085 230);      /* muted steel - quiet beside brass */
+  --ev-click: var(--accent-ink);
+
+  /* Flat material: crisp border + a whisper of depth, no extrusion. */
+  --raise-1: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --raise-2: 0 6px 16px -4px oklch(0% 0 0 / 0.5);
+  --press-in: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --well: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --latch: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --key-raise: inset 0 0 0 1px oklch(100% 0 0 / 0.04), 0 1px 2px oklch(0% 0 0 / 0.4);
+  --key-hover: inset 0 0 0 1px oklch(100% 0 0 / 0.06), 0 3px 8px -2px oklch(0% 0 0 / 0.5);
+  --key-press: inset 0 1px 3px oklch(0% 0 0 / 0.45);
+  --track: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --lcd-glass: var(--inset);
+  --lcd-ink: var(--accent-ink);
+  --lcd-recess: var(--well);
+  --shadow-pop: 0 20px 48px -16px oklch(0% 0 0 / 0.6);
+  --tl-fill: oklch(72% 0.12 75 / 0.24);
+
+  --stage: oklch(11.5% 0.012 60);
+  --stage-rail: oklch(15.5% 0.014 58);
+  --stage-line: oklch(25% 0.014 56);
+  --stage-muted: oklch(60% 0.018 64);
+  --stage-ink: oklch(91% 0.012 70);
+}
+
+/* Foundry light - a warm sand workbench. Inherits the shared light material. */
+:root[data-theme-family='foundry'][data-theme='light'] {
+  --desk: oklch(90% 0.022 75);
+  --panel: oklch(93.5% 0.018 78);
+  --surface: oklch(96.5% 0.015 80);
+  --surface-hi: oklch(99% 0.01 82);
+  --inset: oklch(86% 0.024 74);
+  --line: oklch(82% 0.024 72);
+  --line-strong: oklch(72% 0.028 70);
+
+  --ink: oklch(28% 0.032 60);
+  --ink-2: oklch(40% 0.03 62);
+  --muted: oklch(52% 0.028 65);
+  --faint: oklch(63% 0.026 68);
+
+  --accent: oklch(54% 0.13 60);          /* bronze */
+  --accent-ink: oklch(48% 0.13 58);
+  --accent-hover: oklch(49% 0.135 60);
+  --accent-weak: oklch(89% 0.05 72);
+  --accent-line: oklch(68% 0.1 66);
+
+  /* Status re-tinted to belong on warm sand. */
+  --danger: oklch(54% 0.18 32);
+  --danger-ink: oklch(50% 0.18 34);
+  --danger-weak: oklch(91% 0.04 35);
+  --ok: oklch(56% 0.1 148);
+  --ok-weak: oklch(90% 0.045 145);
+  --warn: oklch(62% 0.12 78);
+  --ev-route: oklch(52% 0.1 245);
+  --ev-click: var(--accent-ink);
+
+  /* Flat material on warm sand: soft warm-grey shadow, crisp hairline edge. */
+  --bevel-lo: oklch(40% 0.03 60 / 0.16);
+  --raise-1: 0 1px 2px oklch(40% 0.03 60 / 0.12);
+  --raise-2: 0 6px 16px -4px oklch(40% 0.03 60 / 0.2);
+  --press-in: inset 0 1px 2px oklch(40% 0.03 60 / 0.14);
+  --well: inset 0 1px 2px oklch(40% 0.03 60 / 0.12);
+  --latch: inset 0 1px 2px oklch(40% 0.03 60 / 0.14);
+  --key-raise: inset 0 0 0 1px oklch(0% 0 0 / 0.04), 0 1px 2px oklch(40% 0.03 60 / 0.12);
+  --key-hover: inset 0 0 0 1px oklch(0% 0 0 / 0.05), 0 3px 8px -2px oklch(40% 0.03 60 / 0.2);
+  --key-press: inset 0 1px 3px oklch(40% 0.03 60 / 0.16);
+  --track: inset 0 1px 2px oklch(40% 0.03 60 / 0.12);
+  --lcd-glass: var(--inset);
+  --lcd-ink: var(--accent-ink);
+  --lcd-recess: var(--well);
+  --hover-film: oklch(40% 0.03 60 / 0.05);
+  --shadow-pop: 0 20px 48px -16px oklch(40% 0.03 60 / 0.22);
+  --tl-fill: oklch(54% 0.13 60 / 0.26);
+
+  --stage: oklch(88% 0.022 75);
+  --stage-rail: oklch(92.5% 0.018 78);
+  --stage-line: oklch(79% 0.022 72);
+  --stage-muted: oklch(52% 0.028 65);
+  --stage-ink: oklch(28% 0.032 60);
+}
+
+/* ---- SIGNAL - a precise software tool. Cool neutral, one calm teal-blue
+   signal, and FLAT material: a crisp 1px edge with a whisper of shadow instead
+   of an extruded key. Quiet confidence, no skeuomorphism. */
+:root[data-theme-family='signal'] {
+  /* Flatten the whole material recipe (same in both modes; only the shadow
+     colour differs, set per mode below). */
+  --surface-grad: var(--surface);
+  --key-face: none;
+  --specular: transparent;
+  --engrave: none;
+  --key-travel: 1px;
+  --press-squash: 1;
+  --bevel-hi: transparent;
+  --screw: none;
+}
+
+:root[data-theme-family='signal'][data-theme='dark'] {
+  --desk: oklch(16% 0.006 255);
+  --panel: oklch(19.5% 0.007 255);
+  --surface: oklch(24% 0.008 255);
+  --surface-hi: oklch(26% 0.008 255);
+  --inset: oklch(13.5% 0.005 255);
+  --line: oklch(30% 0.008 255);
+  --line-strong: oklch(40% 0.01 255);
+
+  --ink: oklch(96% 0.004 255);
+  --ink-2: oklch(82% 0.007 255);
+  --muted: oklch(64% 0.009 255);
+  --faint: oklch(50% 0.01 255);
+
+  --accent: oklch(70% 0.115 225);        /* calm teal-blue */
+  --accent-ink: oklch(76% 0.1 225);
+  --accent-hover: oklch(74% 0.12 225);
+  --accent-weak: oklch(30% 0.05 230);
+  --accent-line: oklch(50% 0.09 227);
+
+  /* Status re-tinted for a cool tool. Greens cooled off the warm 152; route
+     pushed to indigo so navigation never reads as the teal-blue selection. */
+  --danger: oklch(64% 0.19 22);
+  --danger-ink: oklch(72% 0.16 24);
+  --danger-weak: oklch(30% 0.085 22);
+  --ok: oklch(72% 0.13 165);
+  --ok-weak: oklch(30% 0.06 165);
+  --warn: oklch(80% 0.12 85);
+  --ev-route: oklch(66% 0.13 285);       /* indigo - distinct from the 225 accent */
+  --ev-click: var(--accent-ink);
+
+  /* Flat shadows: crisp border + a whisper of depth, no extrusion. */
+  --raise-1: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --raise-2: 0 6px 16px -4px oklch(0% 0 0 / 0.5);
+  --press-in: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --well: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --latch: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --key-raise: inset 0 0 0 1px oklch(100% 0 0 / 0.04), 0 1px 2px oklch(0% 0 0 / 0.4);
+  --key-hover: inset 0 0 0 1px oklch(100% 0 0 / 0.06), 0 3px 8px -2px oklch(0% 0 0 / 0.5);
+  --key-press: inset 0 1px 3px oklch(0% 0 0 / 0.45);
+  --track: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --lcd-glass: var(--inset);
+  --lcd-ink: var(--accent-ink);
+  --lcd-recess: var(--well);
+  --shadow-pop: 0 20px 48px -16px oklch(0% 0 0 / 0.6);
+
+  --stage: oklch(14.5% 0.006 255);
+  --stage-rail: oklch(19% 0.007 255);
+  --stage-line: oklch(29% 0.008 255);
+  --stage-muted: oklch(64% 0.009 255);
+  --stage-ink: oklch(95% 0.004 255);
+}
+
+:root[data-theme-family='signal'][data-theme='light'] {
+  --desk: oklch(97% 0.003 255);
+  --panel: oklch(99% 0.002 255);
+  --surface: oklch(100% 0 0);
+  --surface-hi: oklch(100% 0 0);
+  --inset: oklch(96.5% 0.004 255);
+  --line: oklch(91% 0.005 255);
+  --line-strong: oklch(83% 0.008 255);
+
+  --ink: oklch(26% 0.01 255);
+  --ink-2: oklch(40% 0.009 255);
+  --muted: oklch(52% 0.009 255);
+  --faint: oklch(64% 0.009 255);
+
+  --accent: oklch(56% 0.13 230);         /* calm teal-blue */
+  --accent-ink: oklch(50% 0.13 230);
+  --accent-hover: oklch(51% 0.135 230);
+  --accent-weak: oklch(94% 0.04 232);
+  --accent-line: oklch(74% 0.1 230);
+
+  /* Status re-tinted for a cool tool; route to indigo, clear of the accent. */
+  --danger: oklch(54% 0.2 22);
+  --danger-ink: oklch(50% 0.2 24);
+  --danger-weak: oklch(94% 0.03 22);
+  --ok: oklch(54% 0.12 165);
+  --ok-weak: oklch(93% 0.045 165);
+  --warn: oklch(64% 0.12 82);
+  --ev-route: oklch(52% 0.16 285);       /* indigo - distinct from the 230 accent */
+  --ev-click: var(--accent-ink);
+
+  --bevel-lo: oklch(50% 0.01 255 / 0.16);
+  --raise-1: 0 1px 2px oklch(50% 0.01 255 / 0.12);
+  --raise-2: 0 6px 16px -4px oklch(50% 0.01 255 / 0.18);
+  --press-in: inset 0 1px 2px oklch(50% 0.01 255 / 0.14);
+  --well: inset 0 1px 2px oklch(50% 0.01 255 / 0.12);
+  --latch: inset 0 1px 2px oklch(50% 0.01 255 / 0.14);
+  --key-raise: inset 0 0 0 1px oklch(0% 0 0 / 0.04), 0 1px 2px oklch(50% 0.01 255 / 0.12);
+  --key-hover: inset 0 0 0 1px oklch(0% 0 0 / 0.05), 0 3px 8px -2px oklch(50% 0.01 255 / 0.18);
+  --key-press: inset 0 1px 3px oklch(50% 0.01 255 / 0.16);
+  --track: inset 0 1px 2px oklch(50% 0.01 255 / 0.12);
+  --lcd-glass: var(--inset);
+  --lcd-ink: var(--accent-ink);
+  --lcd-recess: var(--well);
+  --hover-film: oklch(0% 0 0 / 0.04);
+  --shadow-pop: 0 20px 48px -16px oklch(50% 0.01 255 / 0.22);
+
+  --stage: oklch(95% 0.003 255);
+  --stage-rail: oklch(98% 0.002 255);
+  --stage-line: oklch(89% 0.005 255);
+  --stage-muted: oklch(52% 0.009 255);
+  --stage-ink: oklch(26% 0.01 255);
+  --vp-bloom: oklch(0% 0 0 / 0.02);
+}
+
+/* ---- MODERN - frosted glass over a soft gradient. Cool neutral surfaces go
+   translucent and pick up a backdrop blur (see the glass rules below the theme
+   blocks); a single refined indigo carries the signal. Generous rounding, no
+   hardware, no extrusion - soft diffuse elevation and a bright glass top edge.
+   The recorded stage stays solid: evidence is never frosted. */
+:root[data-theme-family='modern'] {
+  --radius: 13px;
+  --radius-sm: 9px;
+  --radius-lg: 18px;
+  --surface-grad: linear-gradient(var(--surface-hi), var(--surface));
+  --key-face: none;
+  --specular: transparent;
+  --engrave: none;
+  --key-travel: 1px;
+  --press-squash: 1;
+  --screw: none;
+  /* One frost knob for the whole theme - tighten here, nowhere else. */
+  --glass: blur(40px) saturate(1.8);
+}
+
+:root[data-theme-family='modern'][data-theme='light'] {
+  /* Translucent white glass; the body gradient shows through the blur. */
+  --desk: oklch(96.5% 0.006 265);
+  --panel: oklch(100% 0.002 265 / 0.62);
+  --surface: oklch(100% 0 0 / 0.6);
+  --surface-hi: oklch(100% 0 0 / 0.78);
+  --inset: oklch(96% 0.01 268 / 0.55);
+  --line: oklch(50% 0.03 272 / 0.13);
+  --line-strong: oklch(50% 0.03 272 / 0.22);
+
+  --ink: oklch(28% 0.025 275);
+  --ink-2: oklch(42% 0.022 272);
+  --muted: oklch(54% 0.02 270);
+  --faint: oklch(64% 0.018 268);
+
+  --accent: oklch(56% 0.18 274);         /* refined indigo */
+  --accent-ink: oklch(52% 0.18 274);
+  --accent-hover: oklch(51% 0.185 274);
+  --accent-weak: oklch(94% 0.045 280);
+  --accent-line: oklch(74% 0.12 277);
+
+  --danger: oklch(56% 0.2 22);
+  --danger-ink: oklch(52% 0.2 24);
+  --danger-weak: oklch(95% 0.03 20);
+  --ok: oklch(60% 0.14 155);
+  --ok-weak: oklch(94% 0.05 160);
+  --warn: oklch(70% 0.14 75);
+  --ev-route: oklch(60% 0.14 235);       /* clean sky-blue, clear of indigo */
+  --ev-click: var(--accent-ink);
+
+  /* Glass top edge + soft, indigo-tinted diffuse shadows. */
+  --bevel-hi: oklch(100% 0 0 / 0.85);
+  --bevel-lo: oklch(45% 0.05 278 / 0.16);
+  --raise-1: 0 1px 3px oklch(45% 0.05 278 / 0.09);
+  --raise-2: 0 14px 32px -12px oklch(42% 0.07 278 / 0.2), 0 2px 6px oklch(42% 0.05 278 / 0.08);
+  --press-in: inset 0 1px 2px oklch(45% 0.05 278 / 0.12);
+  --well: inset 0 1px 2px oklch(45% 0.05 278 / 0.1);
+  --latch: inset 0 1px 2px oklch(45% 0.05 278 / 0.12);
+  --key-raise: inset 0 1px 0 var(--bevel-hi), 0 1px 2px oklch(45% 0.05 278 / 0.1),
+    0 4px 12px -5px oklch(42% 0.06 278 / 0.14);
+  --key-hover: inset 0 1px 0 var(--bevel-hi), 0 8px 20px -6px oklch(42% 0.07 278 / 0.2);
+  --key-press: inset 0 1px 3px oklch(45% 0.05 278 / 0.14);
+  --track: inset 0 1px 2px oklch(45% 0.05 278 / 0.1);
+  --lcd-glass: var(--inset);
+  --lcd-ink: var(--accent-ink);
+  --lcd-recess: var(--well);
+  --hover-film: oklch(50% 0.08 278 / 0.06);
+  --shadow-pop: 0 30px 64px -22px oklch(40% 0.09 278 / 0.3);
+  --tl-fill: oklch(56% 0.18 274 / 0.3);
+
+  /* Solid clean stage (no glass under the evidence). */
+  --stage: oklch(95% 0.005 265);
+  --stage-rail: oklch(98% 0.003 265);
+  --stage-line: oklch(88% 0.008 265);
+  --stage-muted: oklch(54% 0.02 270);
+  --stage-ink: oklch(28% 0.025 275);
+  --vp-bloom: oklch(0% 0 0 / 0.02);
+}
+
+/* Modern dark - deep cool glass, a faint indigo bloom in the gradient desk. */
+:root[data-theme-family='modern'][data-theme='dark'] {
+  --desk: oklch(15% 0.022 275);
+  --panel: oklch(26% 0.025 272 / 0.46);
+  --surface: oklch(30% 0.028 270 / 0.42);
+  --surface-hi: oklch(34% 0.03 270 / 0.5);
+  --inset: oklch(16% 0.02 278 / 0.5);
+  --line: oklch(100% 0 0 / 0.09);
+  --line-strong: oklch(100% 0 0 / 0.16);
+
+  --ink: oklch(96% 0.01 270);
+  --ink-2: oklch(82% 0.015 272);
+  --muted: oklch(64% 0.02 272);
+  --faint: oklch(50% 0.02 272);
+
+  --accent: oklch(70% 0.16 278);         /* refined indigo */
+  --accent-ink: oklch(78% 0.13 278);
+  --accent-hover: oklch(74% 0.165 278);
+  --accent-weak: oklch(36% 0.09 278);
+  --accent-line: oklch(56% 0.13 278);
+
+  --danger: oklch(66% 0.2 22);
+  --danger-ink: oklch(74% 0.16 24);
+  --danger-weak: oklch(34% 0.1 22);
+  --ok: oklch(74% 0.15 158);
+  --ok-weak: oklch(34% 0.07 158);
+  --warn: oklch(80% 0.13 80);
+  --ev-route: oklch(70% 0.14 235);       /* clean sky-blue, clear of indigo */
+  --ev-click: var(--accent-ink);
+
+  --bevel-hi: oklch(100% 0 0 / 0.12);
+  --raise-1: 0 1px 3px oklch(0% 0 0 / 0.4);
+  --raise-2: 0 16px 38px -14px oklch(0% 0 0 / 0.62), 0 2px 8px oklch(0% 0 0 / 0.32);
+  --press-in: inset 0 1px 2px oklch(0% 0 0 / 0.45);
+  --well: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --latch: inset 0 1px 2px oklch(0% 0 0 / 0.42);
+  --key-raise: inset 0 1px 0 var(--bevel-hi), 0 1px 2px oklch(0% 0 0 / 0.4),
+    0 6px 16px -6px oklch(0% 0 0 / 0.5);
+  --key-hover: inset 0 1px 0 var(--bevel-hi), 0 10px 24px -6px oklch(0% 0 0 / 0.6);
+  --key-press: inset 0 1px 3px oklch(0% 0 0 / 0.5);
+  --track: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --lcd-glass: var(--inset);
+  --lcd-ink: var(--accent-ink);
+  --lcd-recess: var(--well);
+  --hover-film: oklch(100% 0 0 / 0.06);
+  --shadow-pop: 0 34px 72px -24px oklch(0% 0 0 / 0.75);
+  --tl-fill: oklch(70% 0.16 278 / 0.3);
+
+  --stage: oklch(13% 0.015 275);
+  --stage-rail: oklch(18% 0.018 273);
+  --stage-line: oklch(30% 0.02 272);
+  --stage-muted: oklch(64% 0.02 272);
+  --stage-ink: oklch(96% 0.01 270);
+}
+
+/* ---- MODERN glass plumbing. backdrop-filter is a property, not a token, so the
+   surfaces that should frost opt in here. The desk gradient lives on <body>; the
+   main column goes transparent so the rail and inspector frost it. */
+:root[data-theme-family='modern'] .workspace-main { background: transparent; }
+
+:root[data-theme-family='modern'] :is(
+  .workspace-rail, .inspector, .cmd, .sheet, .help-card,
+  .scope-menu, .dr-tray, .share-pop
+) {
+  backdrop-filter: var(--glass);
+  -webkit-backdrop-filter: var(--glass);
+}
+
+/* The header frosts via a pseudo, NOT the element: a backdrop-filter on the
+   header makes it a backdrop root, which silently kills the blur on its child
+   .scope-menu (nested backdrop-filter is a no-op). The pseudo isn't an ancestor
+   of the menu, so both frost. */
+:root[data-theme-family='modern'] .app-header {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme-family='modern'] .app-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  backdrop-filter: var(--glass);
+  -webkit-backdrop-filter: var(--glass);
+}
+
+/* A quiet, even top-to-bottom wash - enough for the frost to refract, no
+   coloured corner bloom (that read as a purple AI-glow blotch). */
+:root[data-theme-family='modern'][data-theme='light'] body {
+  background: linear-gradient(180deg, oklch(98% 0.004 262), oklch(95.5% 0.007 268)) fixed;
+}
+:root[data-theme-family='modern'][data-theme='dark'] body {
+  background: linear-gradient(180deg, oklch(16% 0.018 272), oklch(13% 0.022 278)) fixed;
+}
+
+/* ------------------------------------------------------------------ Base --- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+body { overflow-x: clip; }
+
+body {
+  margin: 0;
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Kill double-tap-to-zoom (rapid taps on a card were zooming the whole page,
+     which read as the player zooming). Keeps pinch-zoom for accessibility -
+     unlike user-scalable=no. */
+  touch-action: manipulation;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+code, kbd, pre { font-family: var(--mono); }
+
+::selection { background: var(--accent-weak); color: var(--ink); }
+
+:focus-visible {
+  outline: var(--focus-w) solid var(--focus);
+  outline-offset: var(--focus-offset);
+  border-radius: 2px;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.muted { color: var(--muted); }
+
+.scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.scroll-stage { scrollbar-color: var(--stage-line) transparent; }
+
+/* Section micro-label. */
+.label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-shadow: var(--engrave);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ------------------------------------------------------------ App header --- */
+
+/* A slim command strip: the mark at the left, a live status cluster at the
+   right, one hairline separating it from the work below. */
+/* The top plate of the instrument - a lit top edge, a machined seam at the
+   bottom (dark groove + a hair of highlight under it). */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: color-mix(in oklch, var(--panel) 78%, transparent);
+  background-image: linear-gradient(oklch(100% 0 0 / 0.05), transparent 60%);
+  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  border-bottom: 1px solid oklch(0% 0 0 / 0.4);
+  box-shadow: inset 0 1px 0 var(--bevel-hi), 0 1px 0 var(--bevel-hi),
+    0 10px 30px -22px oklch(0% 0 0 / 0.7);
+}
+
+/* Two zones: brand on the left, instruments on the right. One width on every
+   surface - edge-to-edge strip, contents bounded so they don't sprawl wide. */
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: var(--header-h);
+  max-width: 120rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+.fp-zone { display: inline-flex; align-items: center; gap: 0.5rem; min-width: 0; }
+/* Right zone reads as two banks: search (⌘K), then config (settings + theme),
+   parted by one engraved hairline so the controls don't float as loose icons. */
+.fp-right { gap: 0.5rem; }
+.fp-right .fp-icon-link { position: relative; margin-left: 0.3125rem; }
+.fp-right .fp-icon-link::before {
+  content: '';
+  position: absolute;
+  left: -0.40625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 1.25rem;
+  background: var(--line);
+  box-shadow: 1px 0 0 var(--bevel-hi);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5625rem;
+  color: var(--ink);
+  transition: opacity var(--dur-1) var(--ease-out);
+}
+.brand:hover { opacity: 0.82; }
+.brand-name {
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+/* The whole brand: one anodized full stop closing the wordmark. */
+.brand-dot { color: var(--accent); }
+/* A milled-in descriptor, set off the wordmark by a hairline rule - gives the
+   left zone a real lockup instead of a lone word floating in the strip. */
+.brand-tag {
+  white-space: nowrap;
+  padding-left: 0.625rem;
+  margin-left: 0.0625rem;
+  border-left: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+@media (max-width: 34rem) { .brand-tag { display: none; } }
+
+
+/* ⌘K trigger - a small machined key in the faceplate. */
+.fp-kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 1.875rem;
+  padding-inline: 0.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-grad);
+  box-shadow: var(--raise-1);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  transition: color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.fp-kbd:hover { color: var(--ink); box-shadow: var(--raise-2); }
+.fp-kbd:active { box-shadow: var(--press-in); }
+
+/* Settings gear - a flush icon link in the faceplate. */
+.fp-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+.fp-icon-link:hover { color: var(--ink); background: var(--hover-film); }
+.fp-icon-link[aria-current='page'] { color: var(--accent-ink); background: var(--accent-weak); }
+
+/* ---------------------------------------------------- Command palette --- */
+
+/* Native <dialog> - top layer, so no z-index juggling. */
+.cmd {
+  width: min(92vw, 36rem);
+  max-height: 70vh;
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop), inset 0 1px 0 var(--bevel-hi);
+  color: var(--ink);
+  overflow: hidden;
+}
+.cmd::backdrop { background: oklch(0% 0 0 / 0.5); }
+.cmd[open] { animation: cmd-in var(--dur-2) var(--ease-out); }
+@keyframes cmd-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.cmd-body { display: flex; flex-direction: column; min-height: 0; }
+
+.cmd-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  flex-shrink: 0;
+}
+.cmd-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+}
+.cmd-input::placeholder { color: var(--muted); }
+
+.cmd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.375rem;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--ink-2);
+}
+.cmd-item.is-active { background: var(--accent-weak); color: var(--accent-ink); }
+.cmd-ico { display: inline-flex; flex-shrink: 0; color: var(--faint); }
+.cmd-item.is-active .cmd-ico { color: var(--accent-ink); }
+.cmd-label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.0625rem; }
+.cmd-sid { font-size: 0.8125rem; }
+.cmd-surl { font-size: 0.75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmd-item.is-active .cmd-surl { color: var(--accent-ink); }
+.cmd-when { flex-shrink: 0; font-size: 0.6875rem; color: var(--muted); }
+.cmd-empty { padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.8125rem; }
+
+.cmd-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--line);
+}
+.cmd-help { padding: 0.875rem; display: grid; gap: 1.125rem; overflow: auto; }
+.cmd-help h3 { margin-bottom: 0.5rem; }
+.cmd-help ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4375rem; }
+.cmd-help li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+/* Theme switch - a compact milled three-position selector, same material as the
+   filter console's segmented control. */
+.fp-theme {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid oklch(0% 0 0 / 0.35);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--track);
+}
+.fp-seg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.5rem;
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: var(--muted);
+  transform-origin: center bottom;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+.fp-seg:hover { color: var(--ink); }
+.fp-seg:active { transform: translateY(1px); }
+.fp-seg[aria-pressed='true'] {
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  color: var(--accent-ink);
+  box-shadow: var(--key-raise);
+}
+
+/* Coarse pointers get taller hit targets. */
+@media (pointer: coarse) {
+  .fp-seg { height: 1.875rem; }
+}
+
+/* ---- Project scope selector (faceplate) --------------------------------- */
+/* Scope = which app you're in, so it reads as a source selector on the console,
+   not a rail filter. 2–4 projects → a segmented bank; 5+ → an LCD readout that
+   opens a popover. The lit LED means "you are NOT seeing everything." */
+.scope-led {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+  box-shadow: inset 0 1px 1px oklch(0% 0 0 / 0.5), inset 0 0 0 1px oklch(0% 0 0 / 0.35);
+  transition: background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.scope-led.is-on {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent), inset 0 0 1px oklch(100% 0 0 / 0.4);
+}
+.scope-warn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--danger), transparent 55%);
+}
+
+/* 2-4: segmented bank. Reuses the .seg key faces with a capped width. */
+.scope-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid oklch(0% 0 0 / 0.35);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--track);
+  max-width: 24rem;
+  min-width: 0;
+}
+.scope-seg .seg { flex: 0 1 auto; min-width: 0; }
+.scope-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9rem; }
+
+/* 5+: LCD readout + popover. */
+.scope { position: relative; min-width: 0; }
+.scope-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  height: 2rem;
+  padding: 0 0.625rem;
+  max-width: 16rem;
+  min-width: 0;
+  border: 1px solid oklch(0% 0 0 / 0.35);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--track);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.scope-face::-webkit-details-marker { display: none; }
+.scope-face:hover { color: var(--ink); }
+.scope-cur { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scope-count { color: var(--muted); font-size: 0.6875rem; }
+.scope-caret { color: var(--faint); font-size: 0.625rem; transition: transform var(--dur-2) var(--ease-out); }
+.scope[open] .scope-caret { transform: rotate(180deg); }
+/* One floating-popover chrome - fill, border, radius, elevation. Every popover
+   (project scope, date tray, share) shares it so they're literally the same
+   glass. Each rule below only adds its own position/layout. */
+.scope-menu, .dr-tray, .share-pop {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop), inset 0 1px 0 var(--bevel-hi);
+}
+
+.scope-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  min-width: 15rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+}
+.scope-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  text-align: left;
+}
+.scope-row:hover { background: var(--hover-film); color: var(--ink); }
+.scope-row.is-on { background: var(--accent-weak); color: var(--accent-ink); }
+.scope-rowname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scope-row .scope-count { margin-left: 0.25rem; }
+
+/* Narrow widths: the wordmark is the only brand now, so keep it and tighten
+   the strip so the instrument cluster never wraps. */
+@media (max-width: 30rem) {
+  .app-header-inner { gap: 0.5rem; }
+}
+
+/* Status indicator dot - a small lit node, a soft pulse only when live. */
+.lamp {
+  --lamp: var(--ok);
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lamp);
+}
+.lamp.is-rec { --lamp: var(--accent); animation: dot-pulse 2s var(--ease-inout) infinite; }
+.lamp.is-warn { --lamp: var(--warn); }
+.lamp.is-fail { --lamp: var(--danger); animation: dot-pulse 1.4s var(--ease-inout) infinite; }
+.lamp.is-off { --lamp: var(--faint); animation: none; }
+
+/* Store-health banner - sticks just under the faceplate when the store is
+   degraded (warn) or failing (danger). Honest, one line, dismisses itself when
+   the condition clears. */
+.health-banner {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 29;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid oklch(0% 0 0 / 0.3);
+  background: color-mix(in oklch, var(--warn), var(--panel) 78%);
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+.health-banner svg { flex-shrink: 0; color: var(--warn); }
+.health-banner.is-fail { background: var(--danger-weak); color: var(--danger-ink); }
+.health-banner.is-fail svg { color: var(--danger-ink); }
+.health-banner-link { margin-left: auto; flex-shrink: 0; font-weight: 500; color: inherit; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ------------------------------------------------------------- Page title --- */
+
+.page-title { font-size: 1.5rem; letter-spacing: -0.025em; }
+
+/* --------------------------------------------------------------- Controls --- */
+
+/* A real extruded key. The moulded face sits on ~4px of side wall and casts a
+   shadow on the bench; the top edge catches the lamp. Hover lifts the cast
+   shadow; pressing drives the key DOWN into its housing - walls collapse to an
+   inner shadow, the face squashes, then springs back. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  height: var(--control-h);
+  padding-inline: 0.8125rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--key-raise);
+  transform: translateZ(0);
+  transform-origin: center bottom;
+  transition: background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+.btn:hover { background-color: var(--hover); color: var(--ink); box-shadow: var(--key-hover); }
+.btn:active {
+  transform: translateY(var(--key-travel)) scaleY(var(--press-squash));
+  background-color: var(--press);
+  box-shadow: var(--key-press);
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-press);
+}
+.btn[disabled], .btn[aria-disabled='true'] { opacity: var(--disabled-opacity); pointer-events: none; }
+
+/* Coloured keys share the extrusion; only the moulded face colour changes. */
+.btn-primary {
+  background-color: var(--accent);
+  border-color: color-mix(in oklch, var(--accent), black 22%);
+  color: oklch(99% 0.02 60);
+  text-shadow: 0 1px 1px oklch(0% 0 0 / 0.3);
+}
+.btn-primary:hover { background-color: var(--accent-hover); color: oklch(99% 0.02 60); }
+
+.btn-danger {
+  background-color: var(--danger);
+  border-color: color-mix(in oklch, var(--danger), black 22%);
+  color: oklch(98% 0.01 25);
+  text-shadow: 0 1px 1px oklch(0% 0 0 / 0.3);
+}
+.btn-danger:hover { background-color: color-mix(in oklch, var(--danger), white 7%); color: oklch(99% 0.01 25); }
+/* Keep the red face on press - the generic .btn:active would wash it to the
+   near-white surface press colour (very visible in light mode). */
+.btn-danger:active { background-color: color-mix(in oklch, var(--danger), black 12%); color: oklch(99% 0.01 25); }
+
+/* Ghost - a flush surface marking, no extrusion. */
+.btn-ghost { border-color: transparent; background-image: none; background-color: transparent; box-shadow: none; color: var(--muted); transform: none; }
+.btn-ghost:hover { background-color: var(--hover-film); color: var(--ink); box-shadow: none; }
+.btn-ghost:active { box-shadow: none; background-color: var(--press); transform: translateY(1px); }
+
+.btn-icon { width: var(--control-h); padding-inline: 0; }
+
+/* A recessed well: the field is pushed into the faceplate, its contents read
+   off black rubber. Focus lights the amber rim without lifting the well. */
+.input {
+  height: var(--control-h);
+  padding-inline: 0.6875rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--well);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  transition: border-color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.input::placeholder { color: var(--muted); }
+.input:hover { border-color: var(--muted); }
+.input:focus-visible { outline-offset: 0; border-color: var(--accent-line); box-shadow: var(--well), 0 0 0 1px var(--accent-line); }
+
+.kbd {
+  display: inline-block;
+  min-width: 1.25rem;
+  text-align: center;
+  padding: 0.0625rem 0.3125rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-grad);
+  box-shadow: var(--raise-1);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------------ Empty state --- */
+
+.empty {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 2.5rem 1.75rem;
+}
+.empty-quiet { text-align: center; padding-block: 3.5rem; }
+.empty-quiet p { margin: 0.5rem auto 1.25rem; max-width: 24rem; color: var(--muted); }
+
+.empty-lead { margin-top: 0.5rem; max-width: 24rem; color: var(--muted); }
+
+/* First-run waiting footer: a slow amber pulse while the view polls for the
+   first recording. */
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.waiting .lamp { width: 7px; height: 7px; }
+
+/* Rail empty - compact, mirrors the bench copy. */
+.rail-empty { padding: 1rem 0.75rem; color: var(--muted); }
+.rail-empty .label { display: block; margin-bottom: 0.375rem; color: var(--ink-2); }
+.rail-empty p { font-size: 0.8125rem; }
+
+.empty-grid { display: grid; gap: 2.5rem; }
+@media (min-width: 860px) {
+  .empty-grid { grid-template-columns: 1fr 1.05fr; align-items: start; }
+}
+
+.steps { list-style: none; margin: 1.5rem 0 0; padding: 0; counter-reset: step; }
+.steps li { counter-increment: step; display: flex; gap: 0.875rem; color: var(--ink-2); }
+.steps li + li { margin-top: 0.875rem; }
+.steps li::before {
+  content: counter(step, decimal-leading-zero);
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--accent-ink);
+  background: var(--surface-grad);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--raise-1);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.0625rem;
+}
+
+.snippet {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--inset);
+  overflow: hidden;
+}
+.snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.snippet pre {
+  margin: 0;
+  padding: 0.875rem;
+  overflow-x: auto;
+  font-size: 0.78125rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.snippet-note {
+  padding: 0.625rem 0.875rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-grad);
+  box-shadow: var(--raise-1);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-snap);
+}
+.copy-btn:hover { background: linear-gradient(var(--hover-hi), var(--hover)); color: var(--ink); box-shadow: var(--raise-2); }
+.copy-btn:active { transform: translateY(var(--press-travel)); box-shadow: var(--press-in); }
+
+/* --------------------------------------------------------------- Skeleton --- */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--inset), color-mix(in oklch, var(--inset), var(--ink) 6%), var(--inset));
+  background-size: 200% 100%;
+  border-radius: var(--radius-sm);
+  animation: skeleton-shift 1.4s var(--ease-inout) infinite;
+}
+@keyframes skeleton-shift {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ======================================================================== */
+/*  THE WORKSPACE - one console: command strip on top, session browser at    */
+/*  left, replay stage filling the bench, inspector at right.                */
+/* ======================================================================== */
+
+.workspace { display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+.workspace-body { display: flex; flex: 1; min-height: 0; }
+
+/* The left control bay - a moulded module with a milled seam down its right
+   edge (dark groove + a lit lip) separating it from the bench. */
+.workspace-rail {
+  display: flex;
+  flex-direction: column;
+  width: var(--rail-w);
+  flex-shrink: 0;
+  min-height: 0;
+  border-right: 1px solid oklch(0% 0 0 / 0.4);
+  background: var(--panel);
+  box-shadow: 1px 0 0 var(--bevel-hi), inset -1px 0 3px oklch(0% 0 0 / 0.12);
+}
+
+.workspace-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--desk);
+}
+
+/* ---------------------------------------------------------- Filter console --- */
+
+/* The filter bay: a compact stack of labelled modules. The active position is
+   unmistakable, the inactive ones quiet but never cheap. */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  border-bottom: 1px solid var(--line);
+}
+.filter-module { display: flex; flex-direction: column; gap: 0.4375rem; }
+.filter-module > .label { padding-left: 0.0625rem; }
+
+/* Search field - recessed well with an engraved glyph. */
+.search-well { position: relative; display: flex; align-items: center; }
+.search-well .search-ico {
+  position: absolute;
+  left: 0.625rem;
+  display: inline-flex;
+  color: var(--faint);
+  pointer-events: none;
+}
+.search-well .input { width: 100%; padding-left: 2rem; }
+.search-well .clear {
+  position: absolute;
+  right: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--faint);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+.search-well .clear:hover { color: var(--ink); background: var(--hover-film); }
+
+/* Segmented control - a multi-position switch. The lit segment glides under a
+   shared track; a sliding indicator would need JS, so the segment itself lifts
+   onto the surface and the label takes the accent. */
+/* A multi-position selector: a milled channel holding detented keys. Inactive
+   positions sit flush in the channel; the selected one rises as an extruded
+   key with an amber-lit label - the switch is physically thrown to it. */
+.segmented {
+  display: flex;
+  padding: 4px;
+  gap: 3px;
+  border: 1px solid oklch(0% 0 0 / 0.35);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--track);
+}
+.seg {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  padding: 0.3125rem 0.375rem;
+  border-radius: calc(var(--radius-sm) - 1px);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  transform-origin: center bottom;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+.seg:hover { color: var(--ink); }
+.seg:not([aria-pressed='true']):hover { background: var(--hover-film); }
+.seg:active { transform: translateY(1px); }
+.seg[aria-pressed='true'] {
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  color: var(--accent-ink);
+  box-shadow: var(--key-raise);
+}
+.seg svg { flex-shrink: 0; }
+.seg-icon { flex: 0 0 auto; min-width: 2rem; }
+
+/* Filter chips - compact toggles and project pills. Active = accent-filled. */
+.chip-row { display: flex; align-items: center; flex-wrap: nowrap; gap: 0.375rem; }
+/* Project scope rides the rest of the row, right of the Errors-only key. */
+.chip-row .scope, .chip-row .scope-seg { flex: 1 1 auto; min-width: 0; }
+.chip-row .scope-face {
+  width: 100%;
+  max-width: none;
+  height: 1.875rem;
+  border-radius: var(--radius);
+  justify-content: flex-start;
+}
+.chip-row .scope-face .scope-count { margin-left: auto; }
+/* A latching push-button with an indicator LED. Stands proud when off; engaging
+   it pushes the button down and it STAYS in - sunk into the housing, amber wash,
+   LED lit. Press again and it springs back out. A real radio-station button. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  height: 1.875rem;
+  padding-inline: 0.6875rem;
+  border: 1px solid oklch(0% 0 0 / 0.3);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
+  transform-origin: center bottom;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-spring);
+}
+.chip:hover { color: var(--ink); box-shadow: var(--key-hover); }
+.chip:active { transform: translateY(var(--key-travel)) scaleY(var(--press-squash)); box-shadow: var(--key-press); transition-duration: var(--dur-press); transition-timing-function: var(--ease-press); }
+.chip .chip-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+  box-shadow: inset 0 1px 1px oklch(0% 0 0 / 0.5), inset 0 0 0 1px oklch(0% 0 0 / 0.35);
+  transition: background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.chip[aria-pressed='true'] {
+  border-color: var(--accent-line);
+  background-color: var(--accent-weak);
+  background-image: none;
+  color: var(--accent-ink);
+  box-shadow: var(--key-press);
+  transform: translateY(2px);
+}
+.chip[aria-pressed='true'] .chip-led { background: var(--danger); box-shadow: 0 0 6px var(--danger), inset 0 0 1px oklch(100% 0 0 / 0.4); }
+
+/* ---- Recorded: the date-range control ----------------------------------- */
+
+.daterange { position: relative; }
+
+/* The face - a key that reads the current range and opens the tray. */
+.dr-face {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 0.4375rem 0 0.625rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  text-align: left;
+  transform-origin: center bottom;
+  transition: color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-spring);
+}
+.dr-face:hover { color: var(--ink); box-shadow: var(--key-hover); }
+.dr-face:active { transform: translateY(var(--key-travel)) scaleY(var(--press-squash)); box-shadow: var(--key-press); transition-duration: var(--dur-press); transition-timing-function: var(--ease-press); }
+.dr-face > svg { flex-shrink: 0; color: var(--faint); }
+.dr-face.is-set { color: var(--accent-ink); }
+.dr-face.is-set > svg { color: var(--accent-ink); }
+.dr-val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-sm);
+  color: var(--faint);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+.dr-clear:hover { color: var(--ink); background: var(--hover-film); }
+
+/* The tray - slides down out of the face like a mechanism opening. */
+.dr-tray {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.4375rem);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  transform-origin: top center;
+  animation: dr-open var(--dur-2) var(--ease-out);
+}
+@keyframes dr-open {
+  from { opacity: 0; transform: translateY(-6px) scaleY(0.96); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+/* Presets - a vertical stack of detented keys in a milled tray. */
+.dr-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--track);
+}
+.dr-preset {
+  padding: 0.375rem 0.5rem;
+  border-radius: calc(var(--radius-sm) - 1px);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: left;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.dr-preset:hover { color: var(--ink); background: var(--hover-film); }
+.dr-preset[aria-pressed='true'] {
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  color: var(--accent-ink);
+}
+
+/* Calendar. */
+.dr-cal { display: flex; flex-direction: column; gap: 0.4375rem; }
+.dr-cal-head { display: flex; align-items: center; justify-content: space-between; }
+.dr-month {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-shadow: var(--engrave);
+}
+.dr-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  color: var(--ink-2);
+  transform-origin: center bottom;
+  transition: color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-spring);
+}
+.dr-nav:hover { color: var(--ink); box-shadow: var(--key-hover); }
+.dr-nav:active { transform: translateY(var(--key-travel)) scaleY(var(--press-squash)); box-shadow: var(--key-press); transition-duration: var(--dur-press); transition-timing-function: var(--ease-press); }
+.dr-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  color: var(--faint);
+  text-align: center;
+}
+.dr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dr-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--ink-2);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-snap);
+}
+.dr-day:hover { background: var(--hover-film); color: var(--ink); }
+.dr-day:active { transform: scale(calc(1 - (1 - var(--press-squash)) * 3)); }
+.dr-day.is-out { color: var(--faint); opacity: 0.55; }
+.dr-day.is-today { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.dr-day.is-in { background: var(--accent-weak); color: var(--accent-ink); border-radius: 0; }
+.dr-day.is-edge {
+  background-color: var(--accent);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  color: oklch(99% 0.02 60);
+  border-radius: var(--radius-sm);
+}
+
+/* ----------------------------------------------------------- Session list --- */
+
+.rail-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+/* A cartridge in the tray: a moulded card that lifts under the cursor and
+   latches into an amber socket when loaded into the bench. */
+.s-card {
+  position: relative;
+  display: block;
+  padding: 0.625rem 0.75rem 0.625rem 0.8125rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--raise-2);
+  transform-origin: center bottom;
+  transition: background-color var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+/* Selection reads through the seated press state + the amber id - no rib. */
+.s-card:hover { background: linear-gradient(var(--hover-hi), var(--hover)); border-color: var(--line-strong); box-shadow: var(--key-hover); }
+.s-card:active { transform: translateY(1px) scaleY(var(--press-squash)); box-shadow: var(--key-press); transition-duration: var(--dur-1); }
+.s-card.is-selected {
+  background: var(--accent-weak);
+  background-image: none;
+  border-color: var(--accent-line);
+  box-shadow: var(--key-press);
+  transform: translateY(1px);
+}
+.s-card.is-selected:active { box-shadow: var(--key-press); }
+.s-card.is-selected .s-when { color: var(--accent-ink); }
+.s-card:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: var(--focus-offset); }
+
+.s-card .s-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.s-card .s-id {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.s-card.is-selected .s-id { color: var(--accent-ink); }
+.s-card .s-when { flex-shrink: 0; font-size: 0.6875rem; color: var(--muted); white-space: nowrap; }
+
+.s-card .s-url {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.3125rem;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  overflow: hidden;
+}
+.s-card .s-url svg { flex-shrink: 0; color: var(--faint); }
+.s-card .s-url span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-card .s-url .host { color: var(--muted); }
+
+.s-card .s-facts {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.s-card .s-facts .fact { display: inline-flex; align-items: center; gap: 0.25rem; }
+.s-card .s-facts svg { color: var(--faint); }
+.s-card .s-facts .spacer { margin-left: auto; }
+
+.s-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.s-flag.is-error { color: var(--danger-ink); background: var(--danger-weak); }
+.s-flag.is-error svg { color: var(--danger-ink); }
+
+/* Selection checkbox - hidden until hover or select mode keeps the card clean. */
+.s-check {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  z-index: 2;
+  opacity: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+.s-card-wrap { position: relative; }
+.s-card-wrap:hover .s-check,
+.s-check:checked,
+.rail-list.is-selecting .s-check { opacity: 1; }
+
+/* ------------------------------------------------------------- Rail foot --- */
+
+.rail-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+.rail-foot .where { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Armed delete: a confirmation bar - readable warning over two balanced actions. */
+.rail-foot.is-armed {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding-block: 0.625rem;
+}
+.rail-foot.is-armed .where {
+  white-space: normal;
+  overflow: visible;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.rail-foot.is-armed .foot-actions { margin-left: 0; gap: 0.5rem; }
+.rail-foot.is-armed .foot-actions .btn { flex: 1; }
+.rail-foot .pager { margin-left: auto; display: inline-flex; gap: 0.25rem; }
+.rail-foot .pg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-grad);
+  box-shadow: var(--raise-1);
+  color: var(--ink-2);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-snap);
+}
+.rail-foot .pg:hover { background: linear-gradient(var(--hover-hi), var(--hover)); color: var(--ink); box-shadow: var(--raise-2); }
+.rail-foot .pg:active { transform: translateY(var(--press-travel)); box-shadow: var(--press-in); }
+.rail-foot .pg[aria-disabled='true'] { opacity: var(--disabled-opacity); pointer-events: none; }
+
+.rail-foot.is-armed { background: var(--danger-weak); color: var(--danger-ink); }
+
+/* Foot buttons (arm / keep / confirm) - compact to fit the strip. */
+.rail-foot .btn { height: 1.75rem; padding-inline: 0.625rem; font-size: 0.6875rem; }
+.rail-foot .foot-del { margin-left: auto; }
+.rail-foot .foot-actions { margin-left: auto; display: inline-flex; gap: 0.375rem; }
+
+/* ----------------------------------------------------- Full-page message --- */
+
+/* Centered single-column message: 404, error boundary. Flow spacing via the
+   lobotomized owl; the action button gets a larger gap. */
+.page-msg {
+  max-width: 28rem;
+  margin-inline: auto;
+  padding: 6rem 1.25rem;
+  text-align: center;
+}
+.page-msg > * + * { margin-top: 0.75rem; }
+.page-msg > .btn { margin-top: 1.5rem; }
+
+/* --------------------------------------------------------- Main: head bar --- */
+
+.main-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 2.75rem;
+  padding-inline: 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.main-head .back { display: none; }
+.main-head .ident { font-family: var(--mono); font-size: 0.8125rem; font-weight: 500; color: var(--ink); }
+.main-head .meta { font-size: 0.75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.main-head .sep { width: 1px; height: 1rem; background: var(--line-strong); flex-shrink: 0; }
+
+.main-body { flex: 1; min-height: 0; padding: 1rem; display: flex; }
+.workspace .player { height: 100%; flex: 1; min-width: 0; min-height: 0; }
+
+/* ---------------------------------------------------------- Idle stage --- */
+
+/* The bench at rest: a framed dark pane with a quiet "no signal" readout and one
+   slow status pulse. Equipment waiting, not an error. */
+.idle-stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  /* A centre bloom over the dark plate, then the plate, lit from within. */
+  background:
+    radial-gradient(70% 55% at 50% 44%, oklch(100% 0 0 / 0.022), transparent 70%),
+    radial-gradient(120% 80% at 50% 0%, var(--vp-bloom), transparent 60%),
+    var(--stage);
+  color: var(--stage-muted);
+  text-align: center;
+  padding: 2rem;
+  overflow: hidden;
+}
+/* Evidence under glass: a soft inner vignette so the plate edges recede and the
+   eye lands centre. Sits above the plate, below the content. */
+.idle-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px 14px oklch(0% 0 0 / 0.34),
+    inset 0 1px 0 oklch(100% 0 0 / 0.04);
+}
+.idle-stage > * { position: relative; z-index: 1; }
+
+/* Gentler on the live stage: frames the device in its dark margin without
+   dimming the recorded content. */
+.stage-viewport::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 70px 4px oklch(0% 0 0 / 0.2);
+}
+
+/* The signal port - a recessed machined lens with the standby lamp breathing
+   inside it. The recorder is armed; it is waiting for a signal to load. */
+.idle-stage .signal-port {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.25rem;
+  height: 4.25rem;
+  margin-bottom: 0.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--stage-line);
+  background:
+    radial-gradient(circle at 50% 36%, color-mix(in oklch, var(--inset), black 30%), var(--inset) 72%);
+  box-shadow:
+    inset 0 2px 7px oklch(0% 0 0 / 0.62),
+    inset 0 -1px 0 var(--bevel-hi),
+    0 1px 0 var(--bevel-hi);
+}
+.idle-stage .signal-port::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px oklch(0% 0 0 / 0.55), inset 0 -1px 1px oklch(100% 0 0 / 0.05);
+}
+.idle-stage .lamp.is-off {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, var(--accent-ink), var(--accent) 70%);
+  box-shadow: 0 0 8px 1px oklch(67% 0.142 55 / 0.55), inset 0 -1px 1px oklch(0% 0 0 / 0.4);
+  animation: standby-breathe 3.2s var(--ease-inout) infinite;
+}
+@keyframes standby-breathe {
+  0%, 100% { opacity: 0.32; box-shadow: 0 0 5px 0 oklch(67% 0.142 55 / 0.4), inset 0 -1px 1px oklch(0% 0 0 / 0.4); }
+  50% { opacity: 1; box-shadow: 0 0 11px 2px oklch(67% 0.142 55 / 0.65), inset 0 -1px 1px oklch(0% 0 0 / 0.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .idle-stage .lamp.is-off { animation: none; opacity: 0.7; }
+}
+.idle-stage .no-signal {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+.idle-stage h2 { color: var(--stage-ink); font-size: 1.0625rem; letter-spacing: -0.01em; }
+.idle-stage p { max-width: 22rem; font-size: 0.8125rem; line-height: 1.55; }
+
+.main-body .empty { width: 100%; max-width: 60rem; margin: auto; }
+
+/* ======================================================================== */
+/*  THE REPLAY STAGE - the hero. A dark framed viewport, a calm transport     */
+/*  deck and a precise scrub timeline. Dark in both themes.                  */
+/* ======================================================================== */
+
+.player { display: flex; align-items: stretch; height: calc(100vh - 9rem); min-height: 30rem; }
+
+.player-stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--stage);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+/* Stage rail - playback status + the honest current URL on a dark readout. */
+.stage-rail {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--stage-line);
+  background: var(--stage-rail);
+}
+.stage-rail .url {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--stage-muted);
+}
+.stage-rail .url span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Share trigger lives on the dark rail, so it uses stage colors. */
+.vp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--stage-muted);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+.vp-btn:hover { color: var(--stage-ink); background: var(--stage-hover); }
+.vp-btn:active { background: var(--stage-active); }
+
+/* Share popover - native, top layer (not clipped by the stage), JS-positioned. */
+.share-pop {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 15rem;
+  padding: 0.3125rem;
+  color: var(--ink);
+}
+.share-pop:popover-open { animation: cmd-in var(--dur-2) var(--ease-out); }
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+.share-item:hover { background: var(--hover-film); color: var(--ink); }
+.share-item svg { flex-shrink: 0; color: var(--faint); }
+.share-item svg.t-ok { color: var(--ok); }
+
+/* Playback status pill. */
+.vp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  flex-shrink: 0;
+  padding: 0.1875rem 0.5rem 0.1875rem 0.4375rem;
+  border: 1px solid var(--stage-line);
+  border-radius: var(--radius-sm);
+  /* Solid deck-coloured chip so it reads over any recorded content in both
+     themes (a translucent black floor vanished on the light stage). */
+  background: var(--stage-rail);
+  box-shadow: inset 0 1px 3px oklch(0% 0 0 / 0.3), 0 1px 0 var(--bevel-hi);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+.vp-status .vp-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--stage-muted);
+  box-shadow: inset 0 1px 1px oklch(0% 0 0 / 0.5);
+}
+.vp-status.is-live { color: var(--accent-ink); }
+.vp-status.is-live .vp-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: dot-pulse 1.6s var(--ease-inout) infinite; }
+/* Legacy badge fallback. */
+.stage-rail .badge { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--stage-muted); }
+
+.stage-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--vp-bloom), transparent 60%),
+    var(--stage);
+  overflow: hidden;
+}
+/* Hidden until rrweb has painted a frame, so the white recorded-iframe never
+   flashes on the dark stage while a record is (re)building. Fades in on ready. */
+.stage-mount { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-3) var(--ease-out); }
+.stage-mount.is-ready { opacity: 1; }
+.stage-mount iframe { border: 0; background: #fff; }
+
+/* Opaque so the white recorded-iframe never bleeds through during a rebuild, and
+   delay-faded so switching records fast (rebuild < 160ms) never flashes it -
+   the overlay unmounts before it becomes visible. Only genuinely slow loads show
+   the "Reconstructing…" readout. */
+.stage-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--stage);
+  color: var(--stage-muted);
+  animation: stage-overlay-in var(--dur-2) var(--ease-out) 160ms both;
+}
+@keyframes stage-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+.stage-overlay h2 { color: var(--stage-ink); font-size: 0.9375rem; }
+.stage-overlay p { max-width: 22rem; font-size: 0.8125rem; }
+.stage-overlay .btn {
+  background: transparent;
+  border-color: var(--stage-line);
+  color: var(--stage-ink);
+  box-shadow: none;
+}
+.stage-overlay .btn:hover { background: var(--stage-hover); }
+
+/* Initialising bar - a thin sweeping indicator, not a spinner. */
+.loading-bar { width: 9rem; height: 2px; border-radius: var(--radius-pill); background: var(--stage-line); overflow: hidden; }
+.loading-bar::after {
+  content: '';
+  display: block;
+  width: 36%;
+  height: 100%;
+  background: var(--accent);
+  animation: loading-sweep 1.1s var(--ease-inout) infinite;
+}
+@keyframes loading-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(280%); }
+}
+
+/* ------------------------------------------------------- Transport deck --- */
+
+/* A control deck bolted onto the chassis: a seam line above it, a lit top plate
+   edge, and four recessed screws pinning it down at the corners. */
+.player-controls {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding: 0.625rem 1.125rem;
+  border-top: 1px solid oklch(0% 0 0 / 0.45);
+  background-color: var(--stage-rail);
+  /* Matte anodised plate: flat, no top-lit plastic gloss. Four pinning
+     screws; depth comes from the 1px lit top edge + the seam line above. */
+  background-image:
+    var(--screw), var(--screw), var(--screw), var(--screw);
+  background-repeat: no-repeat;
+  background-position:
+    7px 9px, calc(100% - 7px) 9px, 7px calc(100% - 9px), calc(100% - 7px) calc(100% - 9px);
+  background-size: 9px 9px, 9px 9px, 9px 9px, 9px 9px;
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.04);
+}
+
+/* The time readout - a recessed amber LCD counter on the deck. */
+.player-controls .clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.3125rem 0.5rem;
+  border: 1px solid oklch(0% 0 0 / 0.5);
+  border-radius: var(--radius-sm);
+  background-color: oklch(22% 0.03 70);
+  background-image: repeating-linear-gradient(0deg, oklch(0% 0 0 / 0.14) 0 1px, transparent 1px 3px);
+  box-shadow: var(--lcd-recess);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: oklch(72% 0.12 70);
+  text-shadow: 0 0 5px oklch(72% 0.12 70 / 0.5);
+  white-space: nowrap;
+}
+.player-controls .clock strong { color: oklch(86% 0.13 75); font-weight: 600; }
+
+/* Non-default themes are flat: the readout is a plain mono counter, no LCD
+   glass, scanlines or glow. */
+:root:not([data-theme-family='classic']) .player-controls .clock {
+  background-color: var(--inset);
+  background-image: none;
+  border-color: var(--stage-line);
+  box-shadow: var(--well);
+  color: var(--stage-ink);
+  text-shadow: none;
+}
+:root:not([data-theme-family='classic']) .player-controls .clock strong { color: var(--accent-ink); }
+
+/* Transport key - an extruded rubber button standing proud of the deck, pressed
+   into its housing on click. Same physics as .btn, tuned for the dark stage. */
+.ctl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border-radius: var(--radius-sm);
+  border: 1px solid oklch(0% 0 0 / 0.4);
+  background-color: var(--stage-rail);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  color: var(--stage-muted);
+  transform-origin: center bottom;
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+.ctl:hover { color: var(--stage-ink); box-shadow: var(--key-hover); }
+.ctl:active {
+  transform: translateY(var(--key-travel)) scaleY(var(--press-squash));
+  box-shadow: var(--key-press);
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-press);
+}
+.ctl[disabled] { opacity: var(--disabled-opacity); pointer-events: none; }
+
+/* Play/pause - the big key, machined slightly wider; lit amber when running. */
+.ctl-primary {
+  width: 2.75rem;
+  color: var(--stage-ink);
+}
+.ctl-primary[data-playing='true'] {
+  background-color: var(--accent);
+  border-color: color-mix(in oklch, var(--accent), black 26%);
+  color: oklch(99% 0.02 60);
+  text-shadow: 0 1px 1px oklch(0% 0 0 / 0.35);
+}
+
+/* Speed selector - a tactile multi-position switch on the deck. */
+.speed-group {
+  display: inline-flex;
+  padding: 4px;
+  gap: 3px;
+  border: 1px solid var(--stage-line);
+  border-radius: var(--radius-sm);
+  /* A milled channel: slightly darker than the deck in BOTH themes (the --track
+     shadow sells the recess). A hardcoded black floor here turned into a murky
+     mid-grey on the light deck and swallowed the inactive 2×/4× labels. */
+  background: var(--stage);
+  box-shadow: var(--track);
+}
+.speed-btn {
+  padding: 0.25rem 0.4375rem;
+  min-width: 2.25rem;
+  border-radius: calc(var(--radius-sm) - 1px);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--stage-muted);
+  transform-origin: center bottom;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+.speed-btn:hover { color: var(--stage-ink); }
+.speed-btn:active { transform: translateY(1px); }
+.speed-btn[aria-pressed='true'] {
+  background-color: var(--stage-rail);
+  background-image: var(--key-face);
+  color: var(--accent-ink);
+  box-shadow: var(--key-raise);
+}
+
+.controls-right { display: inline-flex; align-items: center; gap: 0.375rem; margin-left: auto; }
+
+/* Keyboard-help popover. */
+.help-pop { position: relative; display: inline-flex; }
+@media (pointer: coarse) { .help-pop { display: none; } }
+.help-card {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  z-index: 40;
+  width: 15rem;
+  padding: 0.75rem;
+  border: 1px solid var(--stage-line);
+  border-radius: var(--radius);
+  background: var(--stage-rail);
+  box-shadow: var(--shadow-pop);
+  color: var(--stage-ink);
+  animation: pop-in var(--dur-2) var(--ease-out);
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.help-card h3 { font-size: 0.75rem; margin-bottom: 0.5rem; color: var(--stage-ink); }
+.help-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.375rem; }
+.help-card li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--stage-muted);
+}
+.help-card .kbd {
+  background: var(--stage);
+  border-color: var(--stage-line);
+  color: var(--stage-muted);
+}
+
+/* --------------------------------------------------------- Scrub timeline --- */
+
+.timeline-slot { order: -1; flex-basis: 100%; padding: 0.125rem 0.25rem 0.25rem; }
+@media (min-width: 720px) {
+  .timeline-slot { order: 0; flex-basis: 0; flex-grow: 1; min-width: 9rem; padding: 0 0.625rem; }
+}
+
+/* A precise inset track with fine baseline ticks, an indigo fill behind the
+   playhead and raised event markers. Flat - no tape texture, no glow. */
+.timeline {
+  position: relative;
+  height: 2.125rem;
+  cursor: pointer;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+}
+.timeline .tape {
+  position: absolute;
+  inset: 0.75rem 0;
+  border-radius: var(--radius-pill);
+  background:
+    repeating-linear-gradient(90deg, var(--tl-tick) 0 1px, transparent 1px 8px),
+    var(--tl-track);
+  border: 1px solid var(--stage-line);
+  box-shadow: inset 0 1px 3px oklch(0% 0 0 / 0.5), inset 0 -1px 0 oklch(100% 0 0 / 0.04);
+  overflow: hidden;
+  transition: inset var(--dur-2) var(--ease-out);
+}
+.timeline:hover .tape { inset: 0.6875rem 0; }
+.timeline .progress {
+  position: absolute;
+  inset: 0.75rem auto 0.75rem 0;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  background: var(--tl-fill);
+  pointer-events: none;
+  transition: inset var(--dur-2) var(--ease-out);
+}
+.timeline:hover .progress { inset: 0.6875rem auto 0.6875rem 0; }
+.timeline .playhead {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 2px;
+  transform: translateX(-1px);
+  background: var(--accent);
+  pointer-events: none;
+}
+.timeline .playhead::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  transform: translateX(-50%) rotate(45deg);
+  background: linear-gradient(135deg, color-mix(in oklch, var(--accent), white 18%), var(--accent));
+  border-radius: 2px;
+  box-shadow: 0 1px 2px oklch(0% 0 0 / 0.5), inset 0 1px 0 oklch(100% 0 0 / 0.25);
+}
+
+/* Event markers - thin colored ticks; grow on hover. */
+.timeline-marker {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 0.85rem;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-pill);
+  padding: 0;
+  background: var(--tl-marker-rest);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.timeline-marker:hover, .timeline-marker:focus-visible { transform: translate(-50%, -50%) scaleY(1.25); }
+.timeline-marker.t-route { background: var(--ev-route); }
+.timeline-marker.t-error,
+.timeline-marker.t-danger { background: var(--ev-error); }
+.timeline-marker.t-warn { background: var(--ev-warn); }
+.timeline-marker.t-net { background: var(--ev-net); }
+.timeline-marker.t-accent { background: var(--accent); }
+
+/* ============================================================================
+   THE INSPECTOR - a data panel beside the stage. Unlike the stage it follows
+   the app surface, so it is dark in dark mode and light in light mode.
+   ========================================================================== */
+
+.resizer {
+  flex-shrink: 0;
+  width: 0.625rem;
+  cursor: col-resize;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.resizer::after {
+  content: '';
+  width: 2px;
+  height: 2.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+  transition: background-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.resizer:hover::after, .resizer:focus-visible::after { background: var(--accent); transform: scaleY(1.4); }
+
+.inspector-slot { display: flex; flex-shrink: 0; min-height: 0; }
+.inspector {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  color: var(--ink);
+}
+.sheet .inspector { border: 0; border-radius: 0; box-shadow: none; }
+
+/* Mode selector - a milled channel of flush keys; the active mode is thrown up
+   as a lit key. No underline, no border indicator: the position IS the state. */
+.tabs {
+  display: flex;
+  gap: 3px;
+  padding: 5px;
+  background: var(--inset);
+  box-shadow: var(--track);
+  border-bottom: 1px solid oklch(0% 0 0 / 0.35);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  position: relative;
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  padding: 0.4375rem 0.5rem;
+  /* Nest concentrically in the rounded inspector: outer radius − tray padding. */
+  border-radius: calc(var(--radius-lg) - 5px);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  transform-origin: center bottom;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+}
+.tab:hover { color: var(--ink); }
+.tab:not([aria-selected='true']):hover { background: var(--hover-film); }
+.tab:active { transform: translateY(1px); }
+.tab[aria-selected='true'] {
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--key-raise);
+  color: var(--accent-ink);
+}
+.tab .count {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.0625rem 0.25rem;
+  border-radius: 999px;
+  background: var(--inset);
+  box-shadow: inset 0 1px 1px oklch(0% 0 0 / 0.25);
+  color: var(--muted);
+}
+.tab[aria-selected='true'] .count { color: var(--ink-2); }
+.tab .count.is-danger { color: var(--danger-ink); }
+
+.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.panel-empty {
+  margin: auto;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.panel-empty .label { display: block; margin-bottom: 0.375rem; color: var(--ink); }
+.panel-empty .ico { display: inline-flex; margin-bottom: 0.5rem; }
+
+/* Event log - a dense instrument readout. Rows are flush; the playhead's row
+   seats into the panel (recessed) and lights an amber LED at its left margin.
+   No bars, no borders: a lit indicator marks the live row. */
+.entry-list { display: flex; flex-direction: column; padding: 0.375rem 0.4375rem; gap: 1px; }
+
+.entry-row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.375rem 0.625rem 0.375rem 1.125rem;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: 0.75rem;
+  transition: background-color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+  /* Native off-screen windowing: a session can hold tens of thousands of console
+     entries; rows out of view skip render + layout. `auto` caches each row's real
+     height after first paint, so the intrinsic estimate only seeds new rows. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1.75rem;
+}
+/* Indicator LED, dark until the row is live. */
+.entry-row::before {
+  content: '';
+  position: absolute;
+  left: 0.4375rem;
+  top: 0.6875rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: oklch(0% 0 0 / 0.35);
+  box-shadow: inset 0 1px 1px oklch(0% 0 0 / 0.5);
+  transition: background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.entry-row:hover { background: var(--hover-film); }
+.entry-row.is-active {
+  background: var(--accent-weak);
+  box-shadow: var(--key-press);
+}
+.entry-row.is-active::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.entry-row .time {
+  flex-shrink: 0;
+  width: 2.5rem;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--muted);
+}
+.entry-row.is-active .time { color: var(--accent-ink); }
+.entry-row .ico { flex-shrink: 0; display: inline-flex; align-items: center; transform: translateY(2px); }
+.entry-row .what { flex-shrink: 0; font-weight: 500; color: var(--ink-2); }
+.entry-row.is-active .what { color: var(--ink); }
+.entry-row .detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+
+/* Signal tones. */
+.t-accent { color: var(--accent-ink); }
+.t-danger, .t-error { color: var(--ev-error); }
+.t-warn { color: var(--ev-warn); }
+.t-ok, .t-net { color: var(--ev-net); }
+.t-route { color: var(--ev-route); }
+.t-mute { color: var(--muted); }
+
+/* Console level filter. */
+.level-filter { display: flex; gap: 0.25rem; padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); }
+.level-btn {
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-grad);
+  box-shadow: var(--raise-1);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  text-transform: capitalize;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-snap);
+}
+.level-btn:hover { color: var(--ink); box-shadow: var(--raise-2); }
+.level-btn:active { transform: translateY(var(--press-travel)); box-shadow: var(--press-in); }
+.level-btn[aria-pressed='true'] {
+  background: var(--accent-weak);
+  border-color: var(--accent-line);
+  color: var(--accent-ink);
+  box-shadow: var(--latch);
+}
+
+/* Network log - a milled data sheet. Header is an engraved strip; the live row
+   seats into the panel; status reads off small recessed indicator chips. */
+.net-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+.net-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: var(--inset);
+  color: var(--muted);
+  text-shadow: var(--engrave);
+  box-shadow: inset 0 -1px 0 oklch(0% 0 0 / 0.3), inset 0 1px 0 var(--bevel-hi);
+}
+.net-table td { padding: 0.4375rem 0.625rem; border-bottom: 1px solid var(--line); color: var(--ink-2); }
+.net-table .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.net-table .method { font-family: var(--mono); font-size: 0.6875rem; font-weight: 600; color: var(--ink-2); letter-spacing: 0.02em; }
+.net-table .url-cell { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.net-table tbody tr { transition: background-color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out); }
+.net-table tbody tr:hover { background: var(--hover-film); }
+.net-table tbody tr.is-active { background: var(--accent-weak); box-shadow: var(--key-press); }
+.net-table tbody tr.is-active .method { color: var(--accent-ink); }
+.net-time {
+  color: var(--muted);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.18em;
+  transition: color var(--dur-1) var(--ease-out), text-decoration-color var(--dur-1) var(--ease-out);
+}
+.net-time:hover,
+.net-time:focus-visible {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+.net-status {
+  display: inline-block;
+  min-width: 2.25rem;
+  text-align: center;
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  background: var(--ok-weak);
+  box-shadow: inset 0 1px 2px oklch(0% 0 0 / 0.35), inset 0 0 0 1px oklch(0% 0 0 / 0.2);
+  color: var(--ev-net);
+  text-shadow: 0 0 5px color-mix(in oklch, var(--ev-net), transparent 55%);
+}
+.net-status.is-bad { color: var(--danger-ink); background: var(--danger-weak); text-shadow: 0 0 5px color-mix(in oklch, var(--danger-ink), transparent 55%); }
+
+/* Errors. */
+.error-item { border-bottom: 1px solid var(--line); }
+.error-item summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+.error-item summary::-webkit-details-marker { display: none; }
+.error-item summary:hover { background: var(--hover-film); }
+.error-item summary .time { flex-shrink: 0; font-family: var(--mono); color: var(--muted); }
+.error-item summary .msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.error-item .stack {
+  margin: 0 0.625rem 0.625rem;
+  padding: 0.625rem;
+  overflow-x: auto;
+  background: var(--inset);
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* Metadata. */
+.meta-body { padding: 0.875rem; display: grid; gap: 1rem; }
+.meta-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.stat-cell {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  box-shadow: var(--well);
+}
+.stat-cell .label { color: var(--muted); }
+.stat-cell .val {
+  margin-top: 0.25rem;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.stat-cell .val.cap { font-family: var(--sans); text-transform: capitalize; }
+
+.meta-list {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding-top: 0.25rem;
+}
+.meta-list dt {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding-top: 0.125rem;
+}
+.meta-list dd { margin: 0; font-size: 0.8125rem; color: var(--ink); overflow-wrap: anywhere; }
+.meta-list dd.mono { font-size: 0.75rem; color: var(--muted); }
+
+.meta-divider { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+/* --------------------------------------------------- Player: small screens --- */
+
+@media (max-width: 899.98px) {
+  .player { flex-direction: column; height: auto; }
+  .player-stage { min-height: 20rem; }
+  .resizer { display: none; }
+}
+
+.panel-toggle { display: flex; justify-content: flex-end; margin-bottom: 0.5rem; }
+
+/* Overlay layouts (mobile / theater) keep one tree with the stage as first child so
+   the rrweb mount survives layout toggles; the Details button floats over the stage. */
+.player[data-overlay] { position: relative; flex-direction: column; height: auto; }
+.player[data-overlay] .player-stage { height: 62vh; min-height: 20rem; }
+.player[data-overlay] .panel-toggle,
+.theater .panel-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 56;
+  margin: 0;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: oklch(0% 0 0 / 0.5);
+  animation: fade-in var(--dur-2) var(--ease-out);
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  width: min(92vw, 420px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pop);
+  animation: sheet-in var(--dur-3) var(--ease-out);
+}
+@keyframes sheet-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.sheet-head .label { color: var(--muted); }
+.sheet .ctl { width: 2rem; height: 2rem; color: var(--muted); }
+.sheet .ctl:hover { color: var(--ink); background: var(--hover-film); }
+
+/* Theater - stage fills the window; inspector hidden. */
+.theater {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--stage);
+  padding: 0;
+}
+.theater .player-stage { border: 0; border-radius: 0; height: 100%; box-shadow: none; }
+
+/* rrweb wrapper. */
+.stage-mount .replayer-wrapper { transform-origin: center center; }
+
+/* ---------------------------------------------------------- Replay cursor --- *
+ * rrweb draws the pointer, click pulse and tap rings (.replayer-mouse) into OUR
+ * document, so we restyle them here. Goals: read on ANY recorded surface (white,
+ * dark, photos) like a real OS cursor, and land clicks/taps with a quick legible
+ * pulse. Scoped under .stage-mount to outrank rrweb/dist/style.css. The whole
+ * layer rides the wrapper's scale transform, so every size tracks the recording. */
+
+.stage-mount .replayer-mouse {
+  width: 24px;
+  height: 24px;
+  /* Crisp white pointer, dark edge, soft shadow - visible on anything. Anchored
+     top-left so the tip sits on the real coordinate (not centered like rrweb's). */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 1.5 L2 18.5 L6.2 14.5 L9.5 21.5 L11.8 20.6 L8.5 13.7 L13.5 13.7 Z' fill='%23fff' stroke='%23111' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: left top;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  /* rrweb's 0.05s linear glues the pointer to samples; a hair more smooths the
+     gaps between them without lagging behind a click. Linear chains cleanly. */
+  transition: left 0.06s linear, top 0.06s linear;
+}
+
+/* The ::after is reused purely as the click pulse - no resting dot under the
+   pointer (real cursors don't have one). An expanding accent ring. */
+.stage-mount .replayer-mouse::after {
+  width: 14px;
+  height: 14px;
+  background: transparent;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  opacity: 0;
+}
+.stage-mount .replayer-mouse.active::after { animation: cursor-click 0.45s var(--ease-out) 1; }
+
+/* Touch: rrweb fades a ring in on tap. Recolor to accent, add a dual shadow so
+   it reads on any surface, and bloom a soft disc on the tap itself. */
+.stage-mount .replayer-mouse.touch-device {
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  margin-top: -28px;
+  border-width: 2.5px;
+}
+.stage-mount .replayer-mouse.touch-device.touch-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+.stage-mount .replayer-mouse.touch-device.active::after {
+  width: 56px;
+  height: 56px;
+  background: var(--accent);
+  border: 0;
+  box-shadow: none;
+  opacity: 0;
+  animation: cursor-tap 0.5s var(--ease-out) 1;
+}
+
+@keyframes cursor-click {
+  0%   { opacity: 0.7; transform: translate(-50%, -50%) scale(0.35); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(2.6); }
+}
+@keyframes cursor-tap {
+  0%   { opacity: 0.45; transform: translate(-50%, -50%) scale(0.4); }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(1.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-mount .replayer-mouse { transition: none; }
+  .stage-mount .replayer-mouse.active::after,
+  .stage-mount .replayer-mouse.touch-device.active::after { animation: none; }
+}
+
+/* Tablet: trim the rail so the stage keeps room before the shell stacks. */
+@media (min-width: 900px) and (max-width: 1100px) {
+  :root { --rail-w: 18rem; }
+}
+
+/* ----------------------------------------------------- Workspace: mobile --- */
+
+@media (max-width: 899.98px) {
+  .workspace { height: auto; min-height: 100vh; }
+  .workspace-body { flex-direction: column; }
+  .workspace-rail { width: auto; border-right: 0; border-bottom: 1px solid var(--line-strong); }
+  .rail-list { max-height: none; }
+
+  /* One pane at a time. The rail is home; selecting a session foregrounds the
+     stage. first-run is the exception - its onboarding lives in the bench, so
+     foreground that and hide the (empty) rail. */
+  .workspace.has-selection .workspace-rail,
+  .workspace.show-bench .workspace-rail { display: none; }
+  .workspace:not(.has-selection):not(.show-bench) .workspace-main { display: none; }
+  .workspace .player { height: auto; }
+  .main-body { padding: 0.75rem; }
+  .main-head .back { display: inline-flex; }
+}
+
+/* --------------------------------------------------------------- Settings --- */
+
+.settings-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.settings-main {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: 2rem 1.25rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.settings-title p { margin-top: 0.375rem; }
+
+.set-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--raise-1);
+}
+.set-head h2 { font-size: 1rem; }
+.set-head p { margin-top: 0.25rem; font-size: 0.8125rem; color: var(--muted); max-width: 52ch; }
+
+/* ---- Theme picker: visual-theme cards + appearance sub-control ----------- */
+.tp-grid {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+@media (max-width: 34rem) { .tp-grid { grid-template-columns: 1fr; } }
+
+/* A seated cartridge: flush in its bench, sinks slightly on press, and latches
+   into the amber socket when active - same material language as a session card. */
+.tp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  background-image: var(--key-face);
+  box-shadow: var(--raise-1);
+  text-align: left;
+  transition: box-shadow var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
+}
+.tp-card:hover { box-shadow: var(--raise-2); }
+.tp-card:active { box-shadow: var(--press-in); }
+.tp-card.is-active {
+  border-color: var(--accent-line);
+  background-color: var(--accent-weak);
+  background-image: none;
+  box-shadow: var(--latch);
+}
+
+.tp-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4375rem; }
+
+/* A mini mock rendered from the theme's own swatches (set inline as --p-*). */
+.tp-prev {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 4.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--p-line);
+  background: var(--p-bg);
+  overflow: hidden;
+}
+.tp-prev-bar { height: 0.9375rem; flex-shrink: 0; background: var(--p-surface); border-bottom: 1px solid var(--p-line); }
+.tp-prev-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.3125rem; padding: 0 0.4375rem; }
+.tp-prev-key { width: 1.5rem; height: 0.5rem; border-radius: 2px; background: var(--p-accent); }
+.tp-prev-line { height: 0.25rem; border-radius: 2px; background: var(--p-ink); opacity: 0.5; width: 80%; }
+.tp-prev-line-short { width: 55%; opacity: 0.32; }
+.tp-prev-tag {
+  position: absolute;
+  bottom: 0.25rem;
+  right: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--p-ink);
+  opacity: 0.5;
+}
+
+.tp-meta { display: flex; flex-direction: column; gap: 0.125rem; }
+.tp-name { font-size: 0.8125rem; font-weight: 600; color: var(--ink); }
+.tp-card.is-active .tp-name { color: var(--accent-ink); }
+.tp-desc { font-size: 0.6875rem; color: var(--muted); line-height: 1.4; }
+
+.set-subhead { align-self: stretch; display: flex; flex-direction: column; align-items: flex-start; gap: 0.4375rem; }
+
+.set-presets { align-self: flex-start; }
+.set-custom { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.set-custom .input { width: 9rem; }
+.set-note { font-size: 0.75rem; color: var(--muted); }
+
+.set-readout { display: flex; flex-wrap: wrap; gap: 1.75rem; }
+.set-stat { display: flex; flex-direction: column; gap: 0.25rem; }
+.set-stat-v { font-size: 1.25rem; color: var(--ink); }
+
+.set-danger { border-color: var(--danger-weak); }
+.set-armed { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; color: var(--danger-ink); font-size: 0.8125rem; }
+
+/* ----------------------------------------------------------- A11y util --- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

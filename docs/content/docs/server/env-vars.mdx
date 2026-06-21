@@ -1,0 +1,49 @@
+---
+title: Environment Variables
+description: Every server configuration knob, its default, and what it controls.
+---
+
+All configuration is read from the environment, lazily, at request time. Every
+value is optional - the defaults below are the running defaults.
+
+## Reference
+
+| Variable             | Default       | Controls                                                                          |
+| -------------------- | ------------- | --------------------------------------------------------------------------------- |
+| `DATA_DIR`           | `./data` locally, `/app/data` in Docker | Directory holding the SQLite file.                  |
+| `ALLOWED_ORIGINS`    | `*`           | Comma-separated CORS allowlist, or `*` for any origin.                            |
+| `DASHBOARD_PASSWORD` | _(unset)_     | When set, the dashboard requires HTTP Basic auth (any username).                  |
+| `INGEST_TOKEN`       | _(unset)_     | When set, `/api/ingest` requires this token.                                      |
+| `RETENTION_DAYS`     | _(unset / 0)_ | Delete sessions older than N days (swept hourly). Unset or `0` keeps everything.  |
+| `RATE_LIMIT_PER_MIN` | `100`         | Ingest requests allowed per minute per IP.                                        |
+| `MAX_PAYLOAD_BYTES`  | `5000000`     | Max ingest body size in bytes; larger bodies get `413`.                           |
+
+## Notes
+
+- **`ALLOWED_ORIGINS`** - use `*` for local testing. In production, list your exact
+  origins, e.g. `https://app.example.com,https://www.example.com`.
+- **`DASHBOARD_PASSWORD`** - protects only the dashboard. Ingestion, `/api/health`,
+  and the SDK bundle stay open so recording keeps working. See [Auth](/docs/server/auth).
+- **`INGEST_TOKEN`** - accepted in the request body (`token`) or as an
+  `Authorization: Bearer <token>` header. Body wins because `sendBeacon` flushes
+  cannot set headers.
+- **`RETENTION_DAYS`** - invalid or `<= 0` values are treated as "keep forever".
+- **Port** - the server always listens on `3000` inside the container. Map it to a
+  different host port with Docker, e.g. `-p 8080:3000`.
+
+<Callout type="info" title="Lazy by design">
+  Config is read per call, not at import, so the running process always reflects
+  its current environment.
+</Callout>
+
+## A locked-down example
+
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  -e DASHBOARD_PASSWORD=replace-with-a-password \
+  -e INGEST_TOKEN=$(openssl rand -hex 16) \
+  -e ALLOWED_ORIGINS=https://app.example.com \
+  -e RETENTION_DAYS=30 \
+  tinyreplay
+```

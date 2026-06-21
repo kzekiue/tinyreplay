@@ -1,0 +1,40 @@
+---
+title: TinyReplay
+description: Small self-hosted session replay. Session replay. Nothing else.
+---
+
+TinyReplay records browser sessions with [rrweb](https://github.com/rrweb-io/rrweb),
+stores them in a local SQLite file, and replays them in a small dashboard you
+run yourself.
+
+TinyReplay is pre-1.0. The core local replay flow works, but APIs, storage,
+configuration, and dashboard behavior may change before v1.
+
+<Callout type="info" title="The whole idea">
+  Session replay. Nothing else. No analytics, no funnels, no heatmaps, no user
+  profiles, no hosted service, no account. One app, one SQLite file.
+</Callout>
+
+## What you get
+
+<div className="grid gap-3 sm:grid-cols-2">
+  <FeatureCard label="Self-hosted" index={0}>
+    Build the container from source, mount a data directory, and keep replay data
+    on your own machine.
+  </FeatureCard>
+
+  <FeatureCard label="Privacy-conscious defaults" index={1}>
+    Inputs are masked in the browser before replay events are sent to the server.
+  </FeatureCard>
+</div>
+
+## Start here
+
+- **[Introduction](/docs/getting-started/introduction)** - what TinyReplay is and isn't.
+- **[Installation](/docs/getting-started/installation)** - running the server.
+- **[First replay](/docs/getting-started/first-replay)** - record and watch a session.
+- **[SDK quickstart](/docs/sdk/quickstart)** - add the recorder to your site.
+
+## How it fits together
+
+<ArchitectureDiagram />

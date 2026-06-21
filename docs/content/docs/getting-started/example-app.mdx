@@ -1,0 +1,67 @@
+---
+title: Example App
+description: A minimal end-to-end example you can copy, paste, and run.
+---
+
+The fastest way to see a session land is a single static HTML file pointed at a
+running server.
+
+## A complete page
+
+```html title="index.html"
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TinyReplay demo</title>
+  </head>
+  <body>
+    <h1>Click things</h1>
+    <button id="ping">Ping</button>
+    <input placeholder="Type here - this value is masked" />
+
+    <script src="http://localhost:3000/sdk/tinyreplay.umd.js"></script>
+    <script>
+      TinyReplay.init({
+        endpoint: 'http://localhost:3000',
+        projectId: 'demo',
+        debug: true,
+      })
+
+      document.getElementById('ping').onclick = () =>
+        fetch('https://httpbin.org/get').catch(() => {})
+    </script>
+  </body>
+</html>
+```
+
+<Callout type="info" title="Cross-origin?">
+  If you serve this file from `file://` or another port, the server must allow
+  the origin. Start it with `ALLOWED_ORIGINS=*` for local testing, or list your
+  exact origins for production. See [env vars](/docs/server/env-vars).
+</Callout>
+
+## What gets recorded here
+
+<Steps>
+<Step>
+**The DOM and interactions** - the heading, the button click, scrolling.
+</Step>
+<Step>
+**The text input value is masked** - `maskAllInputs` is on by default, so the
+characters you type are replaced with asterisks before anything is serialized.
+</Step>
+<Step>
+**The `fetch` to httpbin** - captured as metadata only: method, URL, status, and
+duration. No headers, no body. See [network capture](/docs/privacy/network-capture).
+</Step>
+<Step>
+**Console logs** - `debug: true` adds TinyReplay's own logs; the recorder also
+captures your page's `console` output via rrweb's console plugin.
+</Step>
+</Steps>
+
+## Next
+
+Open the dashboard, watch the session, then read the [SDK API](/docs/sdk/api) to
+configure flush cadence, masking, and recording duration.

@@ -1,0 +1,68 @@
+---
+title: Event Flow
+description: A session event's journey from the browser to SQLite, step by step.
+---
+
+One direction, five parts. Events are captured in the browser, batched, posted to
+the ingest API, validated, and written to SQLite. The dashboard reads it back.
+
+<ArchitectureDiagram />
+
+## 1 · Capture (Browser SDK)
+
+rrweb records the DOM and interactions; the SDK layers on console, network
+metadata, error, and route custom events. Masking is applied here, at capture
+time. Events land in an in-memory buffer.
+
+## 2 · Batch (Transport)
+
+A timer flushes the buffer every `flushInterval` (5 s), up to 500 events per
+request. Batches are numbered with a monotonic `seq`; `seq: 0` carries session
+metadata. On page unload, the buffer is drained via `sendBeacon` in small chunks.
+
+## 3 · Ingest (API)
+
+`POST /api/ingest` runs each request through an ordered gauntlet:
+
+<Steps>
+<Step>
+**Content-Type** must be `application/json`, or `400`.
+</Step>
+<Step>
+**Rate limit** - over `RATE_LIMIT_PER_MIN` per IP returns `429`.
+</Step>
+<Step>
+**Size** - `Content-Length` and the real byte length are both checked against
+`MAX_PAYLOAD_BYTES`; over it is `413`.
+</Step>
+<Step>
+**Validation** - a zod schema checks the shape: `projectId` (1–64), `sessionId`
+(uuid), `seq` (≥0), and `events` (1–500). `seq: 0` must also carry `startedAt`,
+`url`, and `viewport`. Failures return `400`.
+</Step>
+<Step>
+**Token** - when `INGEST_TOKEN` is set, the body `token` or a `Bearer` header
+must match (constant-time), or `401`.
+</Step>
+<Step>
+**Persist** - the batch is written and the session row upserted. `200`.
+</Step>
+</Steps>
+
+## 4 · Store (SQLite)
+
+The raw events are stored as a JSON batch in the `events` table, keyed by
+`session_id` and `seq`. The session row is updated with derived counters -
+`event_count`, `page_count` (from route events), and `error_count` (from error
+events) - computed server-side from the batch. See the
+[SQLite schema](/docs/architecture/sqlite-schema).
+
+## 5 · Replay (Dashboard)
+
+The dashboard loads a session's batches in `seq` order, reassembles the event
+stream, and drives the [replay engine](/docs/architecture/replay-engine).
+
+<Callout type="info" title="No outbound calls">
+  The ingest route is annotated `NO TELEMETRY` - it only writes to local SQLite
+  and never makes a request of its own.
+</Callout>

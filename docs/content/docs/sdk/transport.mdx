@@ -1,0 +1,64 @@
+---
+title: Transport
+description: How the SDK batches, flushes, retries, and survives page unload.
+---
+
+The transport has one job: POST recorded events to your server at
+`POST {endpoint}/api/ingest`. It makes no other network calls and reports
+nothing to any third party.
+
+## Batching
+
+Events are buffered and flushed on a timer (`flushInterval`, default 5 s). Each
+flush drains up to 500 events into a single request. A monotonic `seq` numbers
+the batches; `seq: 0` carries the session metadata (start time, URL, viewport).
+
+```text
+buffer ──(every 5s)──▶ takePayload(≤500) ──▶ POST /api/ingest
+```
+
+## Retry, then drop
+
+Recording must never block or break the host page, so the transport is
+deliberately forgiving:
+
+<Steps>
+<Step>
+**Send.** POST the batch as JSON.
+</Step>
+<Step>
+**Retry once.** On failure, wait 2 seconds and try again.
+</Step>
+<Step>
+**Drop.** If the retry also fails, drop the batch silently and keep recording.
+</Step>
+</Steps>
+
+<Callout type="warn" title="Dropped batches are gone">
+  A persistently unreachable server means lost events, by design - the SDK will
+  not queue indefinitely or retry forever at the cost of the user's page.
+</Callout>
+
+## Surviving page unload
+
+A normal `fetch` is unreliable as a page is torn down, so unload uses
+[`navigator.sendBeacon`](https://developer.mozilla.org/docs/Web/API/Navigator/sendBeacon).
+Beacon queues are size-limited (~64 KB), so the buffer is drained as a series of
+small chunks of ~120 events each.
+
+The recorder flushes on three teardown signals:
+
+- `visibilitychange` → `hidden`
+- `beforeunload`
+- `pagehide` (the reliable signal on mobile Safari, which never fires `beforeunload`)
+
+If `sendBeacon` is unavailable, it falls back to a `keepalive` fetch.
+
+## No telemetry
+
+The transport file's sole purpose is to reach `config.endpoint`. It is annotated
+`NO TELEMETRY` in the source and makes no other outbound calls.
+
+## Next
+
+Server-side, the receiving end is the [ingest event flow](/docs/architecture/event-flow).

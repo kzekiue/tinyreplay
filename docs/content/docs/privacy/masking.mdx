@@ -1,0 +1,49 @@
+---
+title: Masking
+description: How and where sensitive content is masked - the privacy view.
+---
+
+Masking is the core privacy mechanism. The important property: it happens **in
+the browser, at capture time**, before any event is buffered or transmitted.
+Masked content never exists in the recording, so it cannot leak in transit or at
+rest.
+
+## Default: all inputs masked
+
+`maskAllInputs` is `true` by default. Every `<input>`, `<textarea>`, and
+`<select>` value is masked the moment it's recorded.
+
+## Opt-in: mask any text
+
+```html
+<span data-tr-mask>Sensitive copy here</span>
+```
+
+`data-tr-mask` masks an element's text and its entire subtree. It maps to rrweb's
+mask-text primitive.
+
+<Callout type="ok" title="Masking vs. ignoring">
+  Masking keeps the *shape* of the page (you see a field, a label, a value
+  outline) but replaces the characters. To remove a region entirely, use
+  [ignored elements](/docs/privacy/ignored-elements).
+</Callout>
+
+## Why capture-time matters
+
+<ArchitectureDiagram />
+
+The masking step lives inside the **Browser SDK** node - the first box in the
+flow. By the time data reaches the transport, the network, or SQLite, the
+sensitive characters are already gone. There is no downstream stage where unmasked
+content exists.
+
+## What this does *not* cover
+
+Masking governs **text and input values**. It does not, on its own, hide:
+
+- Background images or media referenced by URL.
+- Text that you render *outside* a masked element.
+
+For anything that must never be recorded in any form, block it entirely - see
+[ignored elements](/docs/privacy/ignored-elements) - and review the full
+[guarantees](/docs/privacy/guarantees).
