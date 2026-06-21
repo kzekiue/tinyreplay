@@ -15,6 +15,8 @@ tinyreplay is pre-1.0. The core local session replay flow works, but APIs,
 storage format, configuration, and dashboard behavior may change before v1.
 The `v0.1.0` release should be treated as an early self-hosted release.
 
+Documentation: <https://tinyreplay.hane.studio>.
+
 ![The TinyReplay dashboard replaying a session: session list on the left, the replay stage in the center, and the event timeline on the right.](docs/public/dashboard.png)
 
 ## Quick Start
