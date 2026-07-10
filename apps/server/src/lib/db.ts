@@ -71,7 +71,68 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 `;
 
-const MIGRATIONS: string[] = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3];
+// V4: batch ids deduplicate retries, and recorder identity/order separates
+// restarted sequence counters. Rebuild events so these fields are non-null
+// invariants; historical rows are copied intact with deterministic legacy ids.
+const SCHEMA_V4 = `
+CREATE TABLE events_v4 (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id            TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  seq                   INTEGER NOT NULL,
+  batch_id              TEXT NOT NULL,
+  recording_instance_id TEXT NOT NULL,
+  recording_order       INTEGER NOT NULL,
+  events_json           TEXT NOT NULL,
+  received_at           INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+);
+
+INSERT INTO events_v4
+  (id, session_id, seq, batch_id, recording_instance_id, recording_order, events_json, received_at)
+SELECT
+  id,
+  session_id,
+  seq,
+  'legacy-' || id,
+  'legacy-' || session_id,
+  0,
+  events_json,
+  received_at
+FROM events;
+
+DROP TABLE events;
+ALTER TABLE events_v4 RENAME TO events;
+
+CREATE INDEX idx_events_session_id ON events(session_id);
+CREATE UNIQUE INDEX idx_events_session_batch_id ON events(session_id, batch_id);
+`;
+
+// V5: session summaries belong to the newest recorder lifecycle, independent
+// of network arrival order. The instance id is a deterministic tie-breaker for
+// malformed clients that reuse a recording order. Backfill from V4 events;
+// metadata values themselves cannot be reconstructed from historical event JSON.
+const SCHEMA_V5 = `
+ALTER TABLE sessions ADD COLUMN metadata_recording_order INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE sessions ADD COLUMN metadata_recording_instance_id TEXT NOT NULL DEFAULT '';
+
+UPDATE sessions
+SET
+  metadata_recording_order = COALESCE((
+    SELECT recording_order
+    FROM events
+    WHERE session_id = sessions.id
+    ORDER BY recording_order DESC, recording_instance_id DESC, id DESC
+    LIMIT 1
+  ), 0),
+  metadata_recording_instance_id = COALESCE((
+    SELECT recording_instance_id
+    FROM events
+    WHERE session_id = sessions.id
+    ORDER BY recording_order DESC, recording_instance_id DESC, id DESC
+    LIMIT 1
+  ), 'legacy-' || id);
+`;
+
+const MIGRATIONS: string[] = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

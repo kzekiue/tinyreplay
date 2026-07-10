@@ -1,12 +1,14 @@
 import type { DeviceType, ViewportMeta } from './types';
 
 const STORAGE_KEY = 'tinyreplay_session_id';
+const RECORDING_ORDER_KEY = 'tinyreplay_recording_order';
+let inMemoryRecordingOrder = 0;
 
 /**
  * Generate a RFC4122 v4 UUID. Uses crypto.randomUUID when available,
  * otherwise falls back to crypto.getRandomValues so we never pull in a dependency.
  */
-export function generateSessionId(): string {
+function generateUuid(): string {
   const c = globalThis.crypto;
   if (c && typeof c.randomUUID === 'function') {
     return c.randomUUID();
@@ -28,6 +30,35 @@ export function generateSessionId(): string {
     '-' +
     hex.slice(10, 16).join('')
   );
+}
+
+export function generateSessionId(): string {
+  return generateUuid();
+}
+
+/** Generate an opaque delivery id for one ingest batch. Never persisted: a
+ * retry retains its existing payload (and therefore its existing batch id). */
+export function generateBatchId(): string {
+  return generateUuid();
+}
+
+/** Generate an opaque id for a single Recorder lifecycle. */
+export function generateRecordingInstanceId(): string {
+  return generateUuid();
+}
+
+/** Allocate a monotonic lifecycle order for this tab session. Storage-disabled
+ * contexts receive an in-memory order; they also receive a fresh session id. */
+export function getNextRecordingOrder(): number {
+  try {
+    const current = Number.parseInt(sessionStorage.getItem(RECORDING_ORDER_KEY) ?? '0', 10);
+    const next = Number.isFinite(current) && current >= 0 ? current + 1 : 1;
+    sessionStorage.setItem(RECORDING_ORDER_KEY, String(next));
+    return next;
+  } catch {
+    inMemoryRecordingOrder += 1;
+    return inMemoryRecordingOrder;
+  }
 }
 
 /**

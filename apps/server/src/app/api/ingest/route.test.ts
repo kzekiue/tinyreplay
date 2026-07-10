@@ -5,6 +5,8 @@ import { resetDbForTests, getDb } from '@/lib/db';
 import { resetRateLimitForTests } from '@/lib/rate-limit';
 
 const SID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const BID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const RID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
 function makeRequest(body: unknown, headers: Record<string, string> = {}): NextRequest {
   return new NextRequest('http://localhost:3000/api/ingest', {
@@ -17,6 +19,9 @@ function makeRequest(body: unknown, headers: Record<string, string> = {}): NextR
 const validSeq0 = {
   projectId: 'demo',
   sessionId: SID,
+  batchId: BID,
+  recordingInstanceId: RID,
+  recordingOrder: 1,
   seq: 0,
   startedAt: 1700000000000,
   url: 'https://example.com/',
@@ -44,6 +49,83 @@ describe('POST /api/ingest', () => {
 
     const eventRows = getDb().prepare('SELECT COUNT(*) AS n FROM events WHERE session_id = ?').get(SID) as { n: number };
     expect(eventRows.n).toBe(1);
+  });
+
+  it('treats a repeated batch id as an idempotent retry', async () => {
+    await POST(makeRequest(validSeq0));
+    await POST(makeRequest(validSeq0));
+
+    const row = getDb()
+      .prepare('SELECT event_count FROM sessions WHERE id = ?')
+      .get(SID) as { event_count: number };
+    const events = getDb()
+      .prepare('SELECT COUNT(*) AS n FROM events WHERE session_id = ?')
+      .get(SID) as { n: number };
+    expect(row.event_count).toBe(1);
+    expect(events.n).toBe(1);
+  });
+
+  it('accepts a legacy payload without a batch id', async () => {
+    const {
+      batchId: _batchId,
+      recordingInstanceId: _recordingInstanceId,
+      recordingOrder: _recordingOrder,
+      ...legacyPayload
+    } = validSeq0;
+    void _batchId;
+    void _recordingInstanceId;
+    void _recordingOrder;
+    const res = await POST(makeRequest(legacyPayload));
+
+    expect(res.status).toBe(200);
+    const event = getDb()
+      .prepare('SELECT batch_id, recording_instance_id, recording_order FROM events WHERE session_id = ?')
+      .get(SID) as { batch_id: string; recording_instance_id: string; recording_order: number };
+    expect(event.batch_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(event.recording_instance_id).toBe(`legacy-${SID}`);
+    expect(event.recording_order).toBe(0);
+  });
+
+  it('keeps legacy batches before new-client batches and lets the new lifecycle own summary metadata', async () => {
+    const {
+      batchId: _batchId,
+      recordingInstanceId: _recordingInstanceId,
+      recordingOrder: _recordingOrder,
+      ...legacyPayload
+    } = validSeq0;
+    void _batchId;
+    void _recordingInstanceId;
+    void _recordingOrder;
+    await POST(makeRequest(legacyPayload));
+    await POST(makeRequest({
+      ...validSeq0,
+      batchId: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+      recordingInstanceId: '11111111-1111-4111-8111-111111111111',
+      recordingOrder: 1,
+      url: 'https://example.com/new-client',
+    }));
+
+    expect(getDb()
+      .prepare('SELECT recording_order FROM events WHERE session_id = ? ORDER BY recording_order, seq, recording_instance_id, id')
+      .all(SID)).toEqual([{ recording_order: 0 }, { recording_order: 1 }]);
+    expect(getDb()
+      .prepare('SELECT url, metadata_recording_order FROM sessions WHERE id = ?')
+      .get(SID)).toEqual({ url: 'https://example.com/new-client', metadata_recording_order: 1 });
+  });
+
+  it.each([
+    ['batchId only', { batchId: BID }],
+    ['recordingInstanceId only', { recordingInstanceId: RID }],
+  ])('rejects partial new-protocol fields: %s', async (_label, partial) => {
+    const res = await POST(makeRequest({
+      ...validSeq0,
+      batchId: undefined,
+      recordingInstanceId: undefined,
+      recordingOrder: undefined,
+      ...partial,
+    }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('invalid_payload');
   });
 
   it('rejects a non-JSON content type with 400', async () => {

@@ -5,6 +5,9 @@ import type { IngestPayload } from './types';
 const payload: IngestPayload = {
   projectId: 'p',
   sessionId: 'b3b1f8e2-1c2d-4a5b-8c9d-0e1f2a3b4c5d',
+  batchId: 'b3b1f8e2-1c2d-4a5b-8c9d-0e1f2a3b4c5d',
+  recordingInstanceId: 'c3b1f8e2-1c2d-4a5b-8c9d-0e1f2a3b4c5d',
+  recordingOrder: 1,
   seq: 0,
   startedAt: 1700000000000,
   url: 'https://example.com/',
@@ -44,6 +47,10 @@ describe('Transport', () => {
     await p;
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map((c) => JSON.parse(c[1].body).batchId)).toEqual([
+      payload.batchId,
+      payload.batchId,
+    ]);
   });
 
   it('sendBeacon uses navigator.sendBeacon when available', () => {

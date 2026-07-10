@@ -69,11 +69,18 @@ describe('buildFilter', () => {
 
 const SID_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const SID_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const batchId = (label: string): string => `batch-${label}`;
+const recording = (instance: string, order: number = 1) => ({
+  recordingInstanceId: `recording-${instance}`,
+  recordingOrder: order,
+});
 
 function seedSession(id: string, startedAt: number) {
   ingestBatch({
     projectId: 'p',
     sessionId: id,
+    batchId: batchId(`seed-${id}-${startedAt}`),
+    ...recording('seed'),
     seq: 0,
     eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: startedAt }]),
     eventCount: 1,
@@ -114,6 +121,8 @@ describe('queries', () => {
     ingestBatch({
       projectId: 'p',
       sessionId: SID_A,
+      batchId: batchId('later'),
+      ...recording('seed'),
       seq: 1,
       eventsJson: JSON.stringify([
         { type: 3, data: {}, timestamp: 1500 },
@@ -129,6 +138,153 @@ describe('queries', () => {
     expect(s.duration_ms).toBe(2000);
   });
 
+  it('ignores a retried batch with the same batch id', () => {
+    const batch = {
+      projectId: 'p',
+      sessionId: SID_A,
+      batchId: batchId('retry'),
+      ...recording('retry'),
+      seq: 0,
+      eventsJson: JSON.stringify([
+        { type: 2, data: {}, timestamp: 1000 },
+        { type: 5, data: { tag: 'tinyreplay/route', payload: {} }, timestamp: 1100 },
+        { type: 5, data: { tag: 'tinyreplay/error', payload: {} }, timestamp: 1200 },
+      ]),
+      eventCount: 3,
+      routeDelta: 1,
+      errorDelta: 1,
+      endedAt: 1300,
+      startedAt: 1000,
+      url: 'https://example.com/',
+      userAgent: 'test-ua',
+      viewportW: 1280,
+      viewportH: 720,
+      deviceType: 'desktop' as const,
+    };
+    ingestBatch(batch);
+    ingestBatch(batch);
+
+    expect(getSession(SID_A)).toMatchObject({ event_count: 3, page_count: 2, error_count: 1 });
+    expect(getSessionEvents(SID_A)).toHaveLength(3);
+  });
+
+  it('propagates a non-idempotency constraint failure', () => {
+    expect(() =>
+      ingestBatch({
+        projectId: 'p',
+        sessionId: SID_A,
+        batchId: null as unknown as string,
+        ...recording('invalid'),
+        seq: 0,
+        eventsJson: '[]',
+        eventCount: 0,
+        routeDelta: 0,
+        errorDelta: 0,
+        endedAt: 1000,
+        startedAt: 1000,
+        url: 'https://example.com/',
+      }),
+    ).toThrow(/NOT NULL constraint failed/);
+    expect(getSession(SID_A)).toBeNull();
+  });
+
+  it('accepts a new seq-0 batch after a full-page reload', () => {
+    const first = {
+      projectId: 'p', sessionId: SID_A, batchId: batchId('reload-first'), ...recording('page-1'), seq: 0,
+      eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: 1000 }]),
+      eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 1100, startedAt: 1000,
+      url: 'https://example.com/checkout', userAgent: 'ua', viewportW: 1280, viewportH: 720,
+      deviceType: 'desktop' as const,
+    };
+    ingestBatch(first);
+    ingestBatch({
+      ...first,
+      batchId: batchId('reload-second'),
+      ...recording('page-2', 2),
+      eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: 2000 }]),
+      endedAt: 2100,
+      startedAt: 2000,
+      url: 'https://example.com/confirmation',
+    });
+
+    expect(getSession(SID_A)).toMatchObject({ event_count: 2, url: 'https://example.com/confirmation' });
+    expect(getSessionEvents(SID_A)).toHaveLength(2);
+  });
+
+  it('keeps conflicting payloads that share a session and sequence', () => {
+    seedSession(SID_A, 1000);
+    ingestBatch({
+      projectId: 'p', sessionId: SID_A, batchId: batchId('conflict-a'), ...recording('seed'), seq: 1,
+      eventsJson: JSON.stringify([{ type: 3, data: { id: 1 }, timestamp: 1500 }]),
+      eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 1600,
+    });
+    ingestBatch({
+      projectId: 'p', sessionId: SID_A, batchId: batchId('conflict-b'), ...recording('seed'), seq: 1,
+      eventsJson: JSON.stringify([{ type: 3, data: { id: 2 }, timestamp: 1700 }]),
+      eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 1800,
+    });
+
+    expect(getSession(SID_A)!.event_count).toBe(3);
+    expect(getSessionEvents(SID_A)).toHaveLength(3);
+  });
+
+  it('orders replay by recorder lifecycle while summary metadata stays with the newest lifecycle', () => {
+    // Page 1 seq 1 arrives first, then a reloaded page (seq 0), then Page 1
+    // seq 0. All event timestamps are equal, so retrieval must not rely on them.
+    const batch = (label: string, instance: string, order: number, seq: number) => ({
+      projectId: 'p',
+      sessionId: SID_A,
+      batchId: batchId(label),
+      ...recording(instance, order),
+      seq,
+      eventsJson: JSON.stringify([{ label, timestamp: 1000 }]),
+      eventCount: 1,
+      routeDelta: 0,
+      errorDelta: 0,
+      endedAt: 1000,
+      ...(seq === 0
+        ? { startedAt: 1000, url: `https://example.com/${label}`, userAgent: 'ua', viewportW: 1, viewportH: 1, deviceType: 'desktop' as const }
+        : {}),
+    });
+    ingestBatch(batch('page-1-seq-1', 'page-1', 1, 1));
+    ingestBatch({
+      ...batch('page-2-seq-0', 'page-2', 2, 0),
+      endedAt: 4000,
+      startedAt: 2000,
+      url: 'https://example.com/newest',
+      userAgent: 'newest-ua',
+      viewportW: 2,
+      viewportH: 2,
+    });
+    // This delayed seq 0 is from the older lifecycle. It must still appear in
+    // replay order, but it cannot roll the session summary or ended_at back.
+    ingestBatch({
+      ...batch('page-1-seq-0', 'page-1', 1, 0),
+      endedAt: 3000,
+      startedAt: 1000,
+      url: 'https://example.com/older',
+      userAgent: 'older-ua',
+      viewportW: 1,
+      viewportH: 1,
+    });
+
+    expect((getSessionEvents(SID_A) as { label: string }[]).map((event) => event.label)).toEqual([
+      'page-1-seq-0',
+      'page-1-seq-1',
+      'page-2-seq-0',
+    ]);
+    expect(getSession(SID_A)).toMatchObject({
+      url: 'https://example.com/newest',
+      started_at: 2000,
+      user_agent: 'newest-ua',
+      viewport_w: 2,
+      viewport_h: 2,
+      ended_at: 4000,
+      metadata_recording_order: 2,
+      metadata_recording_instance_id: 'recording-page-2',
+    });
+  });
+
   it('listSessions returns most-recent first', () => {
     seedSession(SID_A, 1000);
     seedSession(SID_B, 5000);
@@ -141,6 +297,8 @@ describe('queries', () => {
     ingestBatch({
       projectId: 'p',
       sessionId: SID_A,
+      batchId: batchId('flatten'),
+      ...recording('seed'),
       seq: 1,
       eventsJson: JSON.stringify([{ type: 3, data: {}, timestamp: 1500 }]),
       eventCount: 1,
@@ -158,6 +316,8 @@ describe('queries', () => {
     ingestBatch({
       projectId: 'p',
       sessionId: SID_A,
+      batchId: batchId('corrupt'),
+      ...recording('seed'),
       seq: 1,
       eventsJson: '{"truncated": tru', // simulated corrupt write
       eventCount: 1,
@@ -167,6 +327,8 @@ describe('queries', () => {
     ingestBatch({
       projectId: 'p',
       sessionId: SID_A,
+      batchId: batchId('after-corrupt'),
+      ...recording('seed'),
       seq: 2,
       eventsJson: JSON.stringify([{ type: 3, data: {}, timestamp: 1700 }]),
       eventCount: 1,
@@ -188,14 +350,14 @@ describe('queries', () => {
 
   it('searchSessions matches on url substring', () => {
     ingestBatch({
-      projectId: 'p', sessionId: SID_A, seq: 0,
+      projectId: 'p', sessionId: SID_A, batchId: batchId('checkout'), ...recording('checkout'), seq: 0,
       eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: 1000 }]),
       eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 2000, startedAt: 1000,
       url: 'https://shop.example.com/checkout', userAgent: 'ua',
       viewportW: 1280, viewportH: 720, deviceType: 'desktop',
     });
     ingestBatch({
-      projectId: 'p', sessionId: SID_B, seq: 0,
+      projectId: 'p', sessionId: SID_B, batchId: batchId('blog'), ...recording('blog'), seq: 0,
       eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: 1000 }]),
       eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 2000, startedAt: 1000,
       url: 'https://blog.example.com/post', userAgent: 'ua',
@@ -208,7 +370,7 @@ describe('queries', () => {
   it('searchSessions matches on device_type and id prefix', () => {
     seedSession(SID_A, 1000); // device 'desktop'
     ingestBatch({
-      projectId: 'p', sessionId: SID_B, seq: 0,
+      projectId: 'p', sessionId: SID_B, batchId: batchId('mobile'), ...recording('mobile'), seq: 0,
       eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: 1000 }]),
       eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 2000, startedAt: 1000,
       url: 'https://example.com/', userAgent: 'ua',
@@ -224,6 +386,8 @@ describe('queries', () => {
     ingestBatch({
       projectId: 'p',
       sessionId: SID_B,
+      batchId: batchId('error'),
+      ...recording('seed'),
       seq: 1,
       eventsJson: JSON.stringify([
         { type: 5, data: { tag: 'tinyreplay/error', payload: { message: 'boom' } }, timestamp: 2100 },
@@ -244,7 +408,7 @@ describe('queries', () => {
     // and must not lose events.
     expect(() =>
       ingestBatch({
-        projectId: 'p', sessionId: SID_A, seq: 1,
+        projectId: 'p', sessionId: SID_A, batchId: batchId('out-of-order'), ...recording('seed'), seq: 1,
         eventsJson: JSON.stringify([{ type: 3, data: {}, timestamp: 1500 }]),
         eventCount: 1, routeDelta: 1, errorDelta: 0, endedAt: 1600,
       }),
@@ -259,7 +423,7 @@ describe('queries', () => {
     expect(s.started_at).toBe(1000);
     expect(s.event_count).toBe(2); // both batches counted, none lost
     expect(s.page_count).toBe(2); // stub base 1 + seq1 routeDelta
-    expect(getSessionEvents(SID_A)).toHaveLength(2);
+    expect((getSessionEvents(SID_A) as { type: number }[]).map((event) => event.type)).toEqual([2, 3]);
   });
 
   it('deleteSessions removes sessions (and cascades events) and is idempotent', () => {
@@ -276,7 +440,7 @@ describe('queries', () => {
   it('listProjects returns distinct project ids', () => {
     seedSession(SID_A, 1000); // project 'p'
     ingestBatch({
-      projectId: 'other', sessionId: SID_B, seq: 0,
+      projectId: 'other', sessionId: SID_B, batchId: batchId('other-project'), ...recording('other-project'), seq: 0,
       eventsJson: JSON.stringify([{ type: 2, data: {}, timestamp: 1000 }]),
       eventCount: 1, routeDelta: 0, errorDelta: 0, endedAt: 2000, startedAt: 1000,
       url: 'https://example.com/', userAgent: 'ua',

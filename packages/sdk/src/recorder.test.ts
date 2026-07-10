@@ -60,6 +60,41 @@ describe('Recorder', () => {
     expect('token' in body).toBe(false);
   });
 
+  it('creates a new batch id when a full-page reload restarts seq in the same session', async () => {
+    const first = new Recorder({ endpoint: 'http://localhost:3000', projectId: 'p' });
+    first.start();
+    emitFrom(0)({ type: 2 });
+    await first.stop();
+
+    // A new document keeps sessionStorage but constructs a fresh Recorder.
+    const second = new Recorder({ endpoint: 'http://localhost:3000', projectId: 'p' });
+    second.start();
+    emitFrom(1)({ type: 2 });
+    await second.stop();
+
+    const [firstBody, secondBody] = fetchMock.mock.calls.map((c) => JSON.parse(c[1].body as string));
+    expect(firstBody.sessionId).toBe(secondBody.sessionId);
+    expect([firstBody.seq, secondBody.seq]).toEqual([0, 0]);
+    expect(firstBody.batchId).not.toBe(secondBody.batchId);
+    expect(firstBody.recordingInstanceId).not.toBe(secondBody.recordingInstanceId);
+    expect([firstBody.recordingOrder, secondBody.recordingOrder]).toEqual([1, 2]);
+  });
+
+  it('starts a fresh lifecycle when the same recorder is stopped and started again', async () => {
+    const recorder = new Recorder({ endpoint: 'http://localhost:3000', projectId: 'p' });
+    recorder.start();
+    emitFrom(0)({ type: 2 });
+    await recorder.stop();
+    recorder.start();
+    emitFrom(1)({ type: 2 });
+    await recorder.stop();
+
+    const [first, second] = fetchMock.mock.calls.map((c) => JSON.parse(c[1].body as string));
+    expect([first.seq, second.seq]).toEqual([0, 0]);
+    expect(first.recordingInstanceId).not.toBe(second.recordingInstanceId);
+    expect([first.recordingOrder, second.recordingOrder]).toEqual([1, 2]);
+  });
+
   it('stop() drains the whole buffer', async () => {
     const r = new Recorder({ endpoint: 'http://localhost:3000', projectId: 'p' });
     r.start();
@@ -71,6 +106,9 @@ describe('Recorder', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     const bodies = fetchMock.mock.calls.map((c) => JSON.parse(c[1].body as string));
     expect(bodies.map((b) => b.seq)).toEqual([0, 1, 2]);
+    expect(new Set(bodies.map((b) => b.batchId)).size).toBe(3);
+    expect(new Set(bodies.map((b) => b.recordingInstanceId)).size).toBe(1);
+    expect(new Set(bodies.map((b) => b.recordingOrder))).toEqual(new Set([1]));
     expect(bodies.reduce((n, b) => n + b.events.length, 0)).toBe(1200);
   });
 

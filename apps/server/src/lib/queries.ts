@@ -15,12 +15,21 @@ export interface SessionRow {
   page_count: number;
   event_count: number;
   error_count: number;
+  /** Lifecycle currently allowed to own URL/viewport/start metadata. */
+  metadata_recording_order: number;
+  metadata_recording_instance_id: string;
   created_at: number;
 }
 
 export interface IngestInput {
   projectId: string;
   sessionId: string;
+  /** Stable per delivery attempt; retrying the same payload reuses this value. */
+  batchId: string;
+  /** Stable for one recorder lifecycle; starts a new sequence namespace. */
+  recordingInstanceId: string;
+  /** Session-wide recorder lifecycle order. */
+  recordingOrder: number;
   seq: number;
   eventsJson: string;
   eventCount: number;
@@ -39,80 +48,117 @@ export interface IngestInput {
 }
 
 /**
- * Persist one ingest batch atomically: upsert the session row, bump counters,
- * and append the raw events JSON. Wrapped in a transaction so a session and its
- * first events are never half-written.
+ * Persist one ingest batch atomically. `(session_id, batch_id)` is the
+ * idempotency key. Batches load by recorder lifecycle order then `seq`, which
+ * may restart when the recorder is recreated. Counters and metadata change
+ * only for a newly inserted batch. The summary metadata owner is the greatest
+ * accepted `(recordingOrder, recordingInstanceId)` tuple; the instance id is
+ * only a deterministic tie-breaker when a malformed client reuses an order.
  */
 export function ingestBatch(input: IngestInput): void {
   const db = getDb();
   const tx = db.transaction((i: IngestInput) => {
+    // A batch can arrive before seq 0 (concurrent/reordered flushes). Create a
+    // minimal parent first so the events insert satisfies its foreign key; seq 0
+    // backfills its metadata after its own unique event row is accepted.
+    db.prepare(
+      `INSERT INTO sessions (id, project_id, started_at, ended_at, url)
+       VALUES (@sessionId, @projectId, @startedAt, @endedAt, @url)
+       ON CONFLICT(id) DO NOTHING`,
+    ).run({
+      sessionId: i.sessionId,
+      projectId: i.projectId,
+      startedAt: i.seq === 0 ? (i.startedAt ?? i.endedAt) : i.endedAt,
+      endedAt: i.endedAt,
+      url: i.seq === 0 ? (i.url ?? '') : '',
+    });
+
+    const inserted = db
+      .prepare(
+        `INSERT INTO events
+           (session_id, seq, batch_id, recording_instance_id, recording_order, events_json)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(session_id, batch_id) DO NOTHING`,
+      )
+      .run(
+        i.sessionId,
+        i.seq,
+        i.batchId,
+        i.recordingInstanceId,
+        i.recordingOrder,
+        i.eventsJson,
+      ).changes;
+    if (inserted === 0) return;
+
     if (i.seq === 0) {
       db.prepare(
-        `INSERT INTO sessions
-           (id, project_id, started_at, ended_at, url, user_agent,
-            viewport_w, viewport_h, device_type, page_count, event_count, error_count)
-         VALUES
-           (@sessionId, @projectId, @startedAt, @endedAt, @url, @userAgent,
-            @viewportW, @viewportH, @deviceType, @pageCount, @eventCount, @errorDelta)
-         ON CONFLICT(id) DO UPDATE SET
-           -- seq 0 is the source of truth for metadata; backfill it even if a
-           -- a subsequent batch raced ahead and created a stub row first.
-           started_at = excluded.started_at,
-           url = excluded.url,
-           user_agent = excluded.user_agent,
-           viewport_w = excluded.viewport_w,
-           viewport_h = excluded.viewport_h,
-           device_type = excluded.device_type,
-           ended_at = excluded.ended_at,
-           event_count = sessions.event_count + excluded.event_count,
-           page_count = sessions.page_count + @routeDelta,
-           error_count = sessions.error_count + @errorDelta`,
-      ).run({
-        sessionId: i.sessionId,
-        projectId: i.projectId,
-        startedAt: i.startedAt ?? i.endedAt,
-        endedAt: i.endedAt,
-        url: i.url ?? '',
-        userAgent: i.userAgent ?? null,
-        viewportW: i.viewportW ?? null,
-        viewportH: i.viewportH ?? null,
-        deviceType: i.deviceType ?? null,
-        pageCount: 1 + i.routeDelta,
-        eventCount: i.eventCount,
-        routeDelta: i.routeDelta,
-        errorDelta: i.errorDelta,
-      });
-    } else {
-      // A batch can arrive before seq 0 (concurrent/reordered flushes) or after
-      // seq 0 was dropped. Ensure a parent row exists so the events INSERT below
-      // never violates the foreign key; seq 0 backfills the real metadata when
-      // (if) it lands. Stub uses schema defaults (page_count=1, counts=0).
-      // Counters may skew slightly under reorder, but events are never lost.
-      db.prepare(
-        `INSERT OR IGNORE INTO sessions (id, project_id, started_at, ended_at, url)
-         VALUES (@sessionId, @projectId, @endedAt, @endedAt, '')`,
-      ).run({ sessionId: i.sessionId, projectId: i.projectId, endedAt: i.endedAt });
-      db.prepare(
         `UPDATE sessions SET
-           ended_at = @endedAt,
+           -- Only the newest accepted lifecycle owns the session summary.
+           -- This makes a delayed seq 0 from an older page unable to roll
+           -- URL/viewport/start metadata backward.
+           started_at = CASE WHEN ${isNewestLifecycle()} THEN @startedAt ELSE started_at END,
+           url = CASE WHEN ${isNewestLifecycle()} THEN @url ELSE url END,
+           user_agent = CASE WHEN ${isNewestLifecycle()} THEN @userAgent ELSE user_agent END,
+           viewport_w = CASE WHEN ${isNewestLifecycle()} THEN @viewportW ELSE viewport_w END,
+           viewport_h = CASE WHEN ${isNewestLifecycle()} THEN @viewportH ELSE viewport_h END,
+           device_type = CASE WHEN ${isNewestLifecycle()} THEN @deviceType ELSE device_type END,
+           metadata_recording_order = CASE WHEN ${isNewestLifecycle()} THEN @recordingOrder ELSE metadata_recording_order END,
+           metadata_recording_instance_id = CASE WHEN ${isNewestLifecycle()} THEN @recordingInstanceId ELSE metadata_recording_instance_id END,
+           ended_at = CASE WHEN ended_at IS NULL OR @endedAt > ended_at THEN @endedAt ELSE ended_at END,
            event_count = event_count + @eventCount,
            page_count = page_count + @routeDelta,
            error_count = error_count + @errorDelta
          WHERE id = @sessionId`,
       ).run({
         sessionId: i.sessionId,
+        recordingOrder: i.recordingOrder,
+        recordingInstanceId: i.recordingInstanceId,
+        startedAt: i.startedAt ?? i.endedAt,
+        url: i.url ?? '',
+        userAgent: i.userAgent ?? null,
+        viewportW: i.viewportW ?? null,
+        viewportH: i.viewportH ?? null,
+        deviceType: i.deviceType ?? null,
+        endedAt: i.endedAt,
+        eventCount: i.eventCount,
+        routeDelta: i.routeDelta,
+        errorDelta: i.errorDelta,
+      });
+    } else {
+      db.prepare(
+        `UPDATE sessions SET
+           -- A lifecycle can be observed before its seq 0 batch. Claim
+           -- ownership now so an older lifecycle cannot backfill over it.
+           metadata_recording_order = CASE WHEN ${isNewestLifecycle()} THEN @recordingOrder ELSE metadata_recording_order END,
+           metadata_recording_instance_id = CASE WHEN ${isNewestLifecycle()} THEN @recordingInstanceId ELSE metadata_recording_instance_id END,
+           ended_at = CASE WHEN ended_at IS NULL OR @endedAt > ended_at THEN @endedAt ELSE ended_at END,
+           event_count = event_count + @eventCount,
+           page_count = page_count + @routeDelta,
+           error_count = error_count + @errorDelta
+         WHERE id = @sessionId`,
+      ).run({
+        sessionId: i.sessionId,
+        recordingOrder: i.recordingOrder,
+        recordingInstanceId: i.recordingInstanceId,
         endedAt: i.endedAt,
         eventCount: i.eventCount,
         routeDelta: i.routeDelta,
         errorDelta: i.errorDelta,
       });
     }
-
-    db.prepare(
-      `INSERT INTO events (session_id, seq, events_json) VALUES (?, ?, ?)`,
-    ).run(i.sessionId, i.seq, i.eventsJson);
   });
   tx(input);
+}
+
+/** SQL predicate evaluated against the session row before this UPDATE writes it. */
+function isNewestLifecycle(): string {
+  return `(
+    @recordingOrder > metadata_recording_order
+    OR (
+      @recordingOrder = metadata_recording_order
+      AND @recordingInstanceId >= metadata_recording_instance_id
+    )
+  )`;
 }
 
 export function getSession(id: string): SessionRow | null {
@@ -285,14 +331,17 @@ export function countSearchSessions(query: string): number {
 export const __test = { buildFilter };
 
 /**
- * Load every recorded event for a session, ordered by flush sequence, and
- * flatten the per-batch JSON arrays into a single rrweb event stream.
+ * Load every recorded event for a session, ordered by recorder lifecycle then
+ * batch sequence, and flatten the per-batch JSON arrays into one rrweb stream.
  * A corrupted batch (bad JSON) is skipped so one damaged row never takes
  * down the whole replay.
  */
 export function getSessionEvents(id: string): unknown[] {
   const rows = getDb()
-    .prepare(`SELECT events_json FROM events WHERE session_id = ? ORDER BY seq ASC, id ASC`)
+    .prepare(
+      `SELECT events_json FROM events WHERE session_id = ?
+       ORDER BY recording_order ASC, seq ASC, recording_instance_id ASC, id ASC`,
+    )
     .all(id) as { events_json: string }[];
   const all: unknown[] = [];
   for (const r of rows) {
