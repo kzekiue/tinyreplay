@@ -2,7 +2,7 @@
 // This route only receives session events from the SDK and writes them to the
 // local SQLite database. It makes no outbound calls of any kind.
 
-import { timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { ingestSchema, countRouteEvents, countErrorEvents } from '@/lib/validate';
@@ -108,6 +108,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ingestBatch({
       projectId: body.projectId,
       sessionId: body.sessionId,
+      // Older SDKs do not carry a delivery id. Keep accepting them, but only
+      // clients that resend a stable batchId can be deduplicated on retry.
+      batchId: body.batchId ?? randomUUID(),
+      recordingInstanceId: body.recordingInstanceId ?? `legacy-${body.sessionId}`,
+      recordingOrder: body.recordingOrder ?? 0,
       seq: body.seq,
       eventsJson: JSON.stringify(body.events),
       eventCount: body.events.length,

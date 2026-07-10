@@ -21,6 +21,11 @@ export const ingestSchema = z
     // Checked by the route, never persisted.
     token: z.string().max(256).optional(),
     sessionId: z.string().uuid(),
+    // New SDKs send a stable id for each payload. Optional only so existing
+    // deployed SDK bundles remain ingestible during rollout.
+    batchId: z.string().uuid().optional(),
+    recordingInstanceId: z.string().uuid().optional(),
+    recordingOrder: z.number().int().nonnegative().optional(),
     seq: z.number().int().min(0),
     startedAt: z.number().int().positive().optional(),
     url: z.string().optional(),
@@ -29,6 +34,14 @@ export const ingestSchema = z
   })
   // seq 0 establishes the session, so it must carry the session metadata.
   .superRefine((data, ctx) => {
+    const recordingFields = [data.batchId, data.recordingInstanceId, data.recordingOrder];
+    if (recordingFields.some((value) => value !== undefined) && recordingFields.some((value) => value === undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['batchId'],
+        message: 'batchId, recordingInstanceId, and recordingOrder must be supplied together',
+      });
+    }
     if (data.seq === 0) {
       if (data.startedAt === undefined)
         ctx.addIssue({ code: 'custom', path: ['startedAt'], message: 'required when seq=0' });

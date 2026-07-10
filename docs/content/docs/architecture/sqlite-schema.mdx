@@ -27,22 +27,32 @@ CREATE TABLE sessions (
   page_count  INTEGER NOT NULL DEFAULT 1,
   event_count INTEGER NOT NULL DEFAULT 0,
   error_count INTEGER NOT NULL DEFAULT 0,
+  metadata_recording_order INTEGER NOT NULL DEFAULT 0,
+  metadata_recording_instance_id TEXT NOT NULL DEFAULT '',
   created_at  INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
 );
 ```
 
 `duration_ms` is a generated column - it is never written, only derived from
-`started_at` and `ended_at`.
+`started_at` and `ended_at`. URL, viewport, user agent, and lifecycle start
+metadata belong to the accepted recorder lifecycle with the greatest
+`(recording_order, recording_instance_id)` tuple. `ended_at` is the maximum
+observed activity time across every accepted batch, so delayed delivery cannot
+move it backward.
 
 ## `events`
 
-The raw rrweb stream, stored as JSON batches keyed by session and sequence.
+The raw rrweb stream, stored as JSON batches. A batch has its own delivery id
+for retries; recorder lifecycle order and `seq` reconstruct the replay order.
 
 ```sql
 CREATE TABLE events (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id  TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   seq         INTEGER NOT NULL,
+  batch_id    TEXT NOT NULL,
+  recording_instance_id TEXT NOT NULL,
+  recording_order INTEGER NOT NULL,
   events_json TEXT NOT NULL,
   received_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
 );
@@ -54,10 +64,19 @@ CREATE TABLE events (
   a single `DELETE` on `sessions`.
 </Callout>
 
+<Callout type="info" title="Legacy SDK compatibility">
+  Payloads without the three delivery/lifecycle fields remain accepted. The
+  server assigns them a random delivery id, `legacy-&lt;sessionId&gt;` recorder id,
+  and recording order `0`. Consequently legacy batches always replay before
+  new-client batches (which start at order `1`) in a shared session. Legacy
+  retries cannot be deduplicated because they have no stable delivery id.
+</Callout>
+
 ## Indexes
 
 ```sql
 CREATE INDEX idx_events_session_id    ON events(session_id);
+CREATE UNIQUE INDEX idx_events_session_batch_id ON events(session_id, batch_id);
 CREATE INDEX idx_sessions_started_at  ON sessions(started_at DESC);
 CREATE INDEX idx_sessions_project_id  ON sessions(project_id);
 ```
@@ -96,9 +115,31 @@ a transaction, then the version is stamped.
 <Step>
 **V3** creates `settings` for persisted dashboard settings.
 </Step>
+<Step>
+**V4** rebuilds `events` with non-null delivery and recorder-order fields,
+copies every historical row with legacy identities, and adds the unique
+`(session_id, batch_id)` idempotency index. No historical event rows are
+deleted.
+</Step>
+<Step>
+**V5** records the lifecycle that owns each session summary. Existing rows use
+the highest retained recorder lifecycle, preventing future delayed batches from
+rolling metadata backward.
+</Step>
 </Steps>
 
 The rule: append new migrations, never edit shipped ones.
+
+### V4 operational note
+
+V4 rebuilds `events` inside one write transaction. It can temporarily require
+substantial additional database/WAL disk space and holds a write lock for the
+copy. SQLite drops indexes and triggers attached to a table when that table is
+dropped. The migration recreates TinyReplay's application-managed
+`idx_events_session_id` and `idx_events_session_batch_id` indexes; TinyReplay
+currently has no application-managed `events` triggers. Unknown out-of-band
+indexes and triggers are intentionally not preserved and are unsupported
+customizations.
 
 ## Next
 

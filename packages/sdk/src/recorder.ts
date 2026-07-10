@@ -23,7 +23,13 @@ import { record } from 'rrweb';
 import { getRecordConsolePlugin } from '@rrweb/rrweb-plugin-console-record';
 import { buildMaskingOptions } from './masking';
 import { Transport } from './transport';
-import { getOrCreateSessionId, getViewportMeta } from './session';
+import {
+  generateBatchId,
+  generateRecordingInstanceId,
+  getNextRecordingOrder,
+  getOrCreateSessionId,
+  getViewportMeta,
+} from './session';
 import { installNetworkCapture, installErrorCapture } from './capture';
 import type { IngestPayload, TinyReplayConfig } from './types';
 import { NETWORK_EVENT_TAG, ERROR_EVENT_TAG } from './types';
@@ -55,6 +61,8 @@ export class Recorder {
   private readonly debug: boolean;
 
   private sessionId = '';
+  private recordingInstanceId = '';
+  private recordingOrder = 0;
   private buffer: unknown[] = [];
   private seq = 0;
   private startedAt = 0;
@@ -85,6 +93,11 @@ export class Recorder {
     if (this.running) return;
     this.running = true;
     this.sessionId = getOrCreateSessionId();
+    this.recordingInstanceId = generateRecordingInstanceId();
+    this.recordingOrder = getNextRecordingOrder();
+    // `start()` may be called again after `stop()`. That is a new recorder
+    // lifecycle, so its first payload must again be seq 0 with metadata.
+    this.seq = 0;
     this.startedAt = Date.now();
     this.startUrl = window.location.href;
 
@@ -191,6 +204,9 @@ export class Recorder {
     const payload: IngestPayload = {
       projectId: this.projectId,
       sessionId: this.sessionId,
+      batchId: generateBatchId(),
+      recordingInstanceId: this.recordingInstanceId,
+      recordingOrder: this.recordingOrder,
       seq,
       events,
     };

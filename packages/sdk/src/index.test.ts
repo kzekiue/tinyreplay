@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock rrweb so we can assert on recording lifecycle without a real DOM capture.
 // vi.hoisted keeps these definitions available to the hoisted vi.mock factory.
@@ -23,6 +23,8 @@ describe('TinyReplay.init', () => {
     sessionStorage.clear();
   });
 
+  afterEach(() => vi.unstubAllGlobals());
+
   it('calling init() twice only starts recording once', async () => {
     TinyReplay.init({ endpoint: 'http://localhost:3000', projectId: 'p' });
     TinyReplay.init({ endpoint: 'http://localhost:3000', projectId: 'p' });
@@ -36,12 +38,24 @@ describe('TinyReplay.init', () => {
     expect(recordFn).not.toHaveBeenCalled();
   });
 
-  it('can restart after stop()', async () => {
+  it('can restart after stop() with a new batch id even though seq restarts', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response('{"ok":true}', { status: 200 })));
+    vi.stubGlobal('fetch', fetchMock);
+
     TinyReplay.init({ endpoint: 'http://localhost:3000', projectId: 'p' });
+    (recordFn.mock.calls[0][0].emit as (event: unknown) => void)({ type: 2 });
     await TinyReplay.stop();
     expect(stopFn).toHaveBeenCalledTimes(1);
     TinyReplay.init({ endpoint: 'http://localhost:3000', projectId: 'p' });
+    (recordFn.mock.calls[1][0].emit as (event: unknown) => void)({ type: 2 });
     expect(recordFn).toHaveBeenCalledTimes(2);
     await TinyReplay.stop();
+
+    const [firstBody, secondBody] = fetchMock.mock.calls.map((c) => JSON.parse(c[1].body as string));
+    expect(firstBody.sessionId).toBe(secondBody.sessionId);
+    expect([firstBody.seq, secondBody.seq]).toEqual([0, 0]);
+    expect(firstBody.batchId).not.toBe(secondBody.batchId);
+    expect(firstBody.recordingInstanceId).not.toBe(secondBody.recordingInstanceId);
+    expect([firstBody.recordingOrder, secondBody.recordingOrder]).toEqual([1, 2]);
   });
 });

@@ -35,6 +35,12 @@ export interface IngestPayload {
   /** Present only when the SDK was configured with a token. */
   token?: string;
   sessionId: string;
+  /** Stable across retries of this payload; unique for every newly created batch. */
+  batchId: string;
+  /** Stable for one Recorder lifecycle; changes when recording starts again. */
+  recordingInstanceId: string;
+  /** Monotonic within a browser tab session; orders Recorder lifecycles. */
+  recordingOrder: number;
   seq: number;
   startedAt?: number;
   url?: string;
