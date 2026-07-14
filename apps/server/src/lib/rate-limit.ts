@@ -33,7 +33,10 @@ export function allowRequest(ip: string, now: number = Date.now()): boolean {
   const cap = config.rateLimitPerMin();
   let b = buckets.get(ip);
   if (!b) {
-    if (buckets.size >= MAX_BUCKETS) evictIdle(now);
+    if (buckets.size >= MAX_BUCKETS) {
+      evictIdle(now);
+      if (buckets.size >= MAX_BUCKETS) return false;
+    }
     b = { tokens: cap, last: now };
     buckets.set(ip, b);
   }

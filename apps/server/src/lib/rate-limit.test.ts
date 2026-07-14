@@ -39,4 +39,14 @@ describe('rate limiter', () => {
     // After 600ms, one token (100/60000 * 600 = 1) has refilled.
     expect(allowRequest('9.9.9.9', t0 + 600)).toBe(true);
   });
+
+  it('rejects new IPs while all tracked buckets are active', () => {
+    const t0 = 1_000_000;
+    for (let i = 0; i < 10_000; i++) {
+      expect(allowRequest(`10.0.${Math.floor(i / 256)}.${i % 256}`, t0)).toBe(true);
+    }
+
+    expect(allowRequest('11.0.0.1', t0)).toBe(false);
+    expect(allowRequest('11.0.0.1', t0 + 60_000)).toBe(true);
+  });
 });
